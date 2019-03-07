@@ -1,0 +1,43 @@
+---
+title: "Project Proposal"
+author: "Laura Cosgrove"
+date: "3/7/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+## Project Title
+
+## Data Sources
+
+## Description of Data
+
+```{r echo = FALSE, message = FALSE}
+test = read_csv("./data/Test_values.csv")
+
+str_remove_hlth <- function(x) {
+  str_remove(x, pattern = "health__")
+}
+
+test_health_subset = test %>% 
+  select(starts_with("health")) %>% 
+  rename_all(str_remove_hlth) %>% 
+  skimr::skim_tee()
+```
+
+There are variables in four general categories:
+
+(a) Area
+
+(b) Health
+
+(c) Demography
+
+(d) Economic
+
+Of course, each category is related to one another, but we can split them up for the purposes 
+
+## Planned Analyses
