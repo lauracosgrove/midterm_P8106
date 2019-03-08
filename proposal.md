@@ -56,7 +56,7 @@ There are variables in four general categories:
 
 4.  Economic
 
-Of course, each category is connected to one another.
+Of course, each category is related to one another, but we can split them up for the purposes
 
 Planned Analyses
 ----------------
