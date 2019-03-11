@@ -10,15 +10,16 @@ library(tidyverse)
 ```
 
 ## Project Title
+Predicting Heart Disease in U.S. Counties
 
-## Data Sources
+## Data Sources (Charlotte)
 
-## Description of Data
+## Description of Data (Alyssa)
 
 ```{r echo = FALSE, message = FALSE}
 training_values = read_csv("./data/Training_values.csv")
 training_labels = read_csv("./data/Training_labels.csv")
-
+test = read_csv("./data/Test_values.csv")
 
 str_remove_hlth <- function(x) {
   str_remove(x, pattern = "health__")
@@ -43,6 +44,10 @@ There are variables in four general categories:
 Of course, each category is related to one another, but we can split them up for the purposes of description.
 
 
-## Planned Analyses
+## Planned Analyses (Laura)
 
+_Part 1: Linear Regression and its Relatives_
+We will randomly partition the data into a training and test set (2:1). We plan to fit a ordinary least squares model using backward stepwise regression, a lasso model, a ridge model, and a PCR model to these data. We will select the lasso, ridge, and PCR parameters using repeated cross-validation. The model performance will be compared using the test RMSE.
 
+_Part 2: Nonlinear Regression_
+We will conduct a similar analysis using nonlinear methods. Using predictor variables suggested by the best-performing model in part 1, we will fit smoothing splines if we detect a potential nonlinear trend in the outcome variable, with roughness parameter chosen by LOOCV. We will evaluate the performance of the spline model vs. the linear model using the test RMSE.
