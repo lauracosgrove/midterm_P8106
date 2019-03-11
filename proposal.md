@@ -6,11 +6,13 @@ Laura Cosgrove
 Project Title
 -------------
 
-Data Sources
-------------
+Predicting Heart Disease in U.S. Counties
 
-Description of Data
--------------------
+Data Sources (Charlotte)
+------------------------
+
+Description of Data (Alyssa)
+----------------------------
 
     ## Skim summary statistics
     ##  n obs: 3080 
@@ -56,7 +58,7 @@ There are variables in four general categories:
 
 4.  Economic
 
-Of course, each category is related to one another, but we can split them up for the purposes
+Of course, each category is related to one another, but we can split them up for the purposes of description.
 
-Planned Analyses
-----------------
+Planned Analyses (Laura)
+------------------------

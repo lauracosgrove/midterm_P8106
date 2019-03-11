@@ -16,7 +16,9 @@ library(tidyverse)
 ## Description of Data
 
 ```{r echo = FALSE, message = FALSE}
-test = read_csv("./data/Test_values.csv")
+training_values = read_csv("./data/Training_values.csv")
+training_labels = read_csv("./data/Training_labels.csv")
+
 
 str_remove_hlth <- function(x) {
   str_remove(x, pattern = "health__")
@@ -38,6 +40,9 @@ There are variables in four general categories:
 
 (d) Economic
 
-Of course, each category is related to one another, but we can split them up for the purposes 
+Of course, each category is related to one another, but we can split them up for the purposes of description.
+
 
 ## Planned Analyses
+
+
