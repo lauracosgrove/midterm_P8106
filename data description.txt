@@ -1,0 +1,71 @@
+Columns
+
+area — information about the county
+
+area__rucc — Rural-Urban Continuum Codes "form a classification scheme that distinguishes metropolitan counties by the population size of their metro area, and nonmetropolitan counties by degree of urbanization and adjacency to a metro area. The official Office of Management and Budget (OMB) metro and nonmetro categories have been subdivided into three metro and six nonmetro categories. Each county in the U.S. is assigned one of the 9 codes." (USDA Economic Research Service, https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/)
+
+area__urban_influence — Urban Influence Codes "form a classification scheme that distinguishes metropolitan counties by population size of their metro area, and nonmetropolitan counties by size of the largest city or town and proximity to metro and micropolitan areas." (USDA Economic Research Service, https://www.ers.usda.gov/data-products/urban-influence-codes/)
+
+econ — economic indicators
+
+econ__economic_typology — County Typology Codes "classify all U.S. counties according to six mutually exclusive categories of economic dependence and six overlapping categories of policy-relevant themes. The economic dependence types include farming, mining, manufacturing, Federal/State government, recreation, and nonspecialized counties. The policy-relevant types include low education, low employment, persistent poverty, persistent child poverty, population loss, and retirement destination." (USDA Economic Research Service, https://www.ers.usda.gov/data-products/county-typology-codes.aspx)
+
+econ__pct_civilian_labor — Civilian labor force, annual average, as percent of population (Bureau of Labor Statistics, http://www.bls.gov/lau/)
+
+econ__pct_unemployment — Unemployment, annual average, as percent of population (Bureau of Labor Statistics, http://www.bls.gov/lau/)
+
+econ__pct_uninsured_adults — Percent of adults without health insurance (Bureau of Labor Statistics, http://www.bls.gov/lau/) econ__pct_uninsured_children — Percent of children without health insurance (Bureau of Labor Statistics, http://www.bls.gov/lau/)
+
+health — health indicators
+
+health__pct_adult_obesity — Percent of adults who meet clinical definition of obese (National Center for Chronic Disease Prevention and Health Promotion)
+
+health__pct_adult_smoking — Percent of adults who smoke (Behavioral Risk Factor Surveillance System)
+
+health__pct_diabetes — Percent of population with diabetes (National Center for Chronic Disease Prevention and Health Promotion, Division of Diabetes Translation)
+
+health__pct_low_birthweight — Percent of babies born with low birth weight (National Center for Health Statistics)
+
+health__pct_excessive_drinking — Percent of adult population that engages in excessive consumption of alcohol (Behavioral Risk Factor Surveillance System, )
+
+health__pct_physical_inacticity — Percent of adult population that is physically inactive (National Center for Chronic Disease Prevention and Health Promotion)
+
+health__air_pollution_particulate_matter — Fine particulate matter in µg/m³ (CDC WONDER, https://wonder.cdc.gov/wonder/help/pm.html)
+
+health__homicides_per_100k — Deaths by homicide per 100,000 population (National Center for Health Statistics)
+
+health__motor_vehicle_crash_deaths_per_100k — Deaths by motor vehicle crash per 100,000 population (National Center for Health Statistics)
+
+health__pop_per_dentist — Population per dentist (HRSA Area Resource File)
+
+health__pop_per_primary_care_physician — Population per Primary Care Physician (HRSA Area Resource File)
+
+demo — demographics information
+
+demo__pct_female — Percent of population that is female (US Census Population Estimates)
+
+demo__pct_below_18_years_of_age — Percent of population that is below 18 years of age (US Census Population Estimates)
+
+demo__pct_aged_65_years_and_older — Percent of population that is aged 65 years or older (US Census Population Estimates)
+
+demo__pct_hispanic — Percent of population that identifies as Hispanic (US Census Population Estimates)
+
+demo__pct_non_hispanic_african_american — Percent of population that identifies as African American (US Census Population Estimates)
+
+demo__pct_non_hispanic_white — Percent of population that identifies as Hispanic and White (US Census Population Estimates)
+
+demo__pct_american_indian_or_alaskan_native — Percent of population that identifies as Native American (US Census Population Estimates)
+
+demo__pct_asian — Percent of population that identifies as Asian (US Census Population Estimates)
+
+demo__pct_adults_less_than_a_high_school_diploma — Percent of adult population that does not have a high school diploma (US Census, American Community Survey)
+
+demo__pct_adults_with_high_school_diploma — Percent of adult population which has a high school diploma as highest level of education achieved (US Census, American Community Survey)
+
+demo__pct_adults_with_some_college — Percent of adult population which has some college as highest level of education achieved (US Census, American Community Survey)
+
+demo__pct_adults_bachelors_or_higher — Percent of adult population which has a bachelor's degree or higher as highest level of education achieved (US Census, American Community Survey)
+
+demo__birth_rate_per_1k — Births per 1,000 of population (US Census Population Estimates)
+
+demo__death_rate_per_1k — Deaths per 1,000 of population (US Census Population Estimates)
