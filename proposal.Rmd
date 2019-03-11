@@ -1,7 +1,7 @@
 ---
 title: "Project Proposal"
-author: "Laura Cosgrove"
-date: "3/7/2019"
+author: "Laura Cosgrove (lec2197), Charlotte Abrams (cea2151), Alyssa Vanderbeek (amv2187)"
+date: "3/17/2019"
 output: github_document
 ---
 
@@ -16,33 +16,17 @@ Predicting Heart Disease in U.S. Counties
 
 ## Description of Data (Alyssa)
 
-```{r echo = FALSE, message = FALSE}
-training_values = read_csv("./data/Training_values.csv")
-training_labels = read_csv("./data/Training_labels.csv")
-test = read_csv("./data/Test_values.csv")
+This data provides county-level information. The response of interest is the heart disease mortality rate per 100k. 
 
-str_remove_hlth <- function(x) {
-  str_remove(x, pattern = "health__")
-}
+Predictors are given in 4 categories:
 
-test_health_subset = test %>% 
-  select(starts_with("health")) %>% 
-  rename_all(str_remove_hlth) %>% 
-  skimr::skim_tee()
-```
+(1) Area - specifying whether the county is metro/nonmetro, general population size, and whether the non metro area is adjacent to a metro area. More information about the classifications given is found at the US Department of Agriculture website.
 
-There are variables in four general categories:
+(2) Economics - these variables give data regarding economic demographics of the population at the county level. These include percent unemployment, percent without health insurance, and the central economic typology of the area (e.g. nonspecialized, farming, etc).
 
-(a) Area
+(3) Demographics - Racial, education, and birth/death rates per 1k.
 
-(b) Health
-
-(c) Demography
-
-(d) Economic
-
-Of course, each category is related to one another, but we can split them up for the purposes of description.
-
+(4) Health - health-related information such as percent obese, percent smoking, percent low birthweight, homicides per 100k, access to primary care and dentistry, and air pollution. 
 
 ## Planned Analyses (Laura)
 
