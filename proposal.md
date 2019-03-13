@@ -12,19 +12,19 @@ Data Sources (Charlotte)
 ------------------------
 This data was taken from https://www.kaggle.com/nandvard/microsoft-data-science-capstone/version/1. Although it is unclear how the data was compiled, we know the sources from which the different variables came from.
 
-(1) Area:
+1.  Area:
     - USDA Economic Research Service, https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/ 
     - USDA Economic Research Service, https://www.ers.usda.gov/data-products/urban-influence-codes/
   
-(2) Economics:
+2.  Economics:
     - USDA Economic Research Service, https://www.ers.usda.gov/data-products/county-typology-codes.aspx
     - Bureau of Labor Statistics, http://www.bls.gov/lau/
     
-(3) Demographics:
+3.  Demographics:
     - US Census Population Estimates
     - American Community Survey
    
-(4) Health:
+4.  Health:
     - National Center for Chronic Disease Prevention and Health Promotion
     - Behavioral Risk Factor Surveillance System
     - Division of Diabetes Translation
