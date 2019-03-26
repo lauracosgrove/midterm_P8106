@@ -29,6 +29,8 @@ Predictors are given in 4 categories:
 Planned Analyses (Laura)
 ------------------------
 
-*Part 1: Linear Regression and its Relatives* We will randomly partition the data into a training and test set (2:1). We plan to fit a ordinary least squares model using backward stepwise regression, a lasso model, a ridge model, and a PCR model to these data. We will select the lasso, ridge, and PCR parameters using repeated cross-validation. The model performance will be compared using the test RMSE.
+*Part 1: Linear Regression and its Relatives* We plan to fit a ordinary least squares model using backward stepwise regression, a lasso model, a ridge model, and a PCR model to these data. We will select the lasso, ridge, and PCR parameters using repeated cross-validation. The model performance will be compared using the training RMSE.
 
-*Part 2: Nonlinear Regression* We will conduct a similar analysis using nonlinear methods. Using predictor variables suggested by the best-performing model in part 1, we will fit smoothing splines if we detect a potential nonlinear trend in the outcome variable, with roughness parameter chosen by GCV. We will evaluate the performance of the spline model vs. the linear model using the test RMSE.
+*Part 2: Nonlinear Regression* We will conduct a similar analysis using nonlinear methods. We will fit a generalized additive model, a multivariate adaptive regression spline model (MARS), and k-nearest neighbors, if we detect a potential nonlinear trend in the outcome variable, with parameters chosen by cross-validation. The training RMSE will be compared among and between the nonlinear and linear models.
+
+*Part 3: Model Comparison*: At the start, we randomly partitioned the data into a training and test set (2:1). We will compare the performance of the nonlinear models vs. the linear models using the test RMSE.
