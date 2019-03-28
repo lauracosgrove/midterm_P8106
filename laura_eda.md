@@ -8,8 +8,8 @@ library(tidyverse)
 library(ggjoy)
 ```
 
-Organizing factors:
--------------------
+Organizing factors
+------------------
 
 ``` r
 heart <- read_csv("./data/train.csv")
@@ -290,3 +290,59 @@ For demography, there's some categorical variables masquerading as separate pred
 For economics, unsurprisingly, the percent of adults and the percent of children without health insurance are highly correlated, as well as percent civilian labor and unemployment rate.
 
 *Overall*: we have a large amount of multicollinearity, and ideally lasso and ridge will allow us to reduce the number of variables who are poorer predictors. I would predict ridge to do well here.
+
+Correlation with predictor
+--------------------------
+
+``` r
+cor_matrix <- heart %>% 
+  select_if(is.numeric) %>% 
+  select(-row_id) %>% 
+  drop_na() %>% 
+  cor()
+
+cor_tibble = as_tibble(cor_matrix)
+
+heart_attacks_cor = tibble(variable = names(cor_tibble),
+                     correlation = cor_tibble$heart_disease_mortality_per_100k)
+
+heart_attacks_cor %>% 
+  arrange(desc(abs(correlation)))
+```
+
+    ## # A tibble: 30 x 2
+    ##    variable                                  correlation
+    ##    <chr>                                           <dbl>
+    ##  1 heart_disease_mortality_per_100k                1    
+    ##  2 health__pct_physical_inacticity                 0.811
+    ##  3 health__pct_adult_obesity                       0.723
+    ##  4 health__pct_diabetes                            0.691
+    ##  5 demo__pct_adults_bachelors_or_higher           -0.649
+    ##  6 health__pct_adult_smoking                       0.602
+    ##  7 demo__death_rate_per_1k                         0.596
+    ##  8 demo__pct_adults_with_high_school_diploma       0.579
+    ##  9 health__pct_low_birthweight                     0.569
+    ## 10 econ__pct_civilian_labor                       -0.568
+    ## # ... with 20 more rows
+
+``` r
+heart_attacks_cor %>% 
+  arrange(abs(correlation))
+```
+
+    ## # A tibble: 30 x 2
+    ##    variable                                    correlation
+    ##    <chr>                                             <dbl>
+    ##  1 econ__pct_uninsured_children                     0.0186
+    ##  2 demo__pct_female                                 0.0394
+    ##  3 demo__pct_american_indian_or_alaskan_native      0.0521
+    ##  4 demo__pct_non_hispanic_white                    -0.0742
+    ##  5 demo__pct_aged_65_years_and_older                0.0922
+    ##  6 demo__pct_below_18_years_of_age                  0.0944
+    ##  7 demo__pct_adults_with_some_college              -0.130 
+    ##  8 demo__birth_rate_per_1k                          0.157 
+    ##  9 health__air_pollution_particulate_matter         0.172 
+    ## 10 health__pop_per_primary_care_physician           0.242 
+    ## # ... with 20 more rows
+
+Above are the most highly-correlated variables with our outcome, and the least-correlated.
