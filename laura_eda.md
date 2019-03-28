@@ -5,36 +5,8 @@ Laura Cosgrove
 
 ``` r
 library(tidyverse)
-```
-
-    ## ── Attaching packages ───────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
-
-    ## ✔ ggplot2 3.1.0     ✔ purrr   0.2.5
-    ## ✔ tibble  1.4.2     ✔ dplyr   0.7.8
-    ## ✔ tidyr   0.8.2     ✔ stringr 1.3.1
-    ## ✔ readr   1.1.1     ✔ forcats 0.3.0
-
-    ## ── Conflicts ──────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
-
-``` r
 library(ggjoy)
 ```
-
-    ## Loading required package: ggridges
-
-    ## 
-    ## Attaching package: 'ggridges'
-
-    ## The following object is masked from 'package:ggplot2':
-    ## 
-    ##     scale_discrete_manual
-
-    ## The ggjoy package has been deprecated. Please switch over to the
-    ## ggridges package, which provides the same functionality. Porting
-    ## guidelines can be found here:
-    ## https://github.com/clauswilke/ggjoy/blob/master/README.md
 
 Organizing factors:
 -------------------
@@ -256,3 +228,65 @@ heart %>%
 would it be worth it to test with these collapsed factors? metro\_adjacency simply functions as a collapsing of the urban\_influence variable.
 
 there's some possible interaction on pure\_population with urban influence at the small population levels but it's probably a result of small sample size
+
+Done with Factors! onto continuous predictors
+---------------------------------------------
+
+``` r
+str_remove_hlth <- function(x) {
+  str_remove(x, pattern = "health__")
+}
+
+substring = function (x) {str_sub(x, start = -20)}
+
+#Within category correlation
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("econ")) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+```
+
+![](laura_eda_files/figure-markdown_github/unnamed-chunk-6-1.png)
+
+``` r
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("demo")) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+```
+
+![](laura_eda_files/figure-markdown_github/unnamed-chunk-6-2.png)
+
+``` r
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("health")) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+```
+
+![](laura_eda_files/figure-markdown_github/unnamed-chunk-6-3.png)
+
+``` r
+heart$eco
+```
+
+    ## Warning: Unknown or uninitialised column: 'eco'.
+
+    ## NULL
+
+Health statistics related to healthy behaviors are highly intercorrelated: obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity. Less so are more environment- or "acts of God"-related health behaviors: particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated).
+
+For demography, there's some categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables.
+
+For economics, unsurprisingly, the percent of adults and the percent of children without health insurance are highly correlated, as well as percent civilian labor and unemployment rate.
+
+*Overall*: we have a large amount of multicollinearity, and ideally lasso and ridge will allow us to reduce the number of variables who are poorer predictors. I would predict ridge to do well here.

@@ -5,7 +5,7 @@ date: "3/26/2019"
 output: github_document
 ---
 
-```{r}
+```{r, message = FALSE}
 library(tidyverse)
 library(ggjoy)
 ```
@@ -125,3 +125,48 @@ heart %>%
 would it be worth it to test with these collapsed factors? metro_adjacency simply functions as a collapsing of the urban_influence variable.
 
 there's some possible interaction on pure_population with urban influence at the small population levels but it's probably a result of small sample size
+
+## Done with Factors! onto continuous predictors
+
+```{r, fig.width = 10}
+str_remove_hlth <- function(x) {
+  str_remove(x, pattern = "health__")
+}
+
+substring = function (x) {str_sub(x, start = -20)}
+
+#Within category correlation
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("econ")) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("demo")) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("health")) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+
+heart$eco
+```
+
+Health statistics related to healthy behaviors are highly intercorrelated: obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity. Less so are more environment- or "acts of God"-related health behaviors: particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated).
+
+For demography, there's some categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables.
+
+For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate.
+
+*Overall*: we have a large amount of multicollinearity, and ideally lasso and ridge will allow us to reduce the number of variables who are poorer predictors. I would predict ridge to do well here.
