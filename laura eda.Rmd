@@ -85,3 +85,43 @@ heart %>%
 
 Not a huge consistent effect for these area and economic typologies.
 
+
+```{r}
+heart <- heart %>% 
+  mutate(pure_population = fct_collapse(population_ruccs, "> 1,000,000" = "Metro > 1 million",
+                                        "250,000 - 1,000,000" = "Metro 250k - 1 million",
+                                        "< 250,000" = "Metro <250k",
+                                        ">20,000" = c("Urban >20,000 metro-adjacent", "Urban >20,000 metro non-adjacent"),
+                                        "2,500 - <20,000" = c("Urban 2,500-19,999 metro-adjacent", "Urban 2,500-19,999 metro non-adjacent"),
+                                        "< 2,500" = c("Rural metro-adjacent", "Rural metro non-adjacent")),
+         metro_adjacency = fct_collapse(population_ruccs, metro = c("Metro > 1 million", "Metro 250k - 1 million", "Metro <250k"),
+                                        adjacent = c("Urban >20,000 metro-adjacent", "Urban 2,500-19,999 metro-adjacent", "Rural metro-adjacent"),
+                                        nonadjacent = c("Urban >20,000 metro non-adjacent", "Urban 2,500-19,999 metro non-adjacent", "Rural metro non-adjacent")))
+
+heart %>% 
+  select(pure_population, metro_adjacency)
+
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = pure_population, fill = metro_ruccs, height=..density..)) +
+  geom_joy(scale = 0.85)
+
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = pure_population, fill = urban_influence, height=..density..)) +
+  geom_joy(scale = 0.85, alpha = 0.3)
+
+##sample size of what's shown above?
+heart %>% group_by(urban_influence, pure_population) %>% 
+  summarize(count = n()) %>% 
+  arrange(count) %>% 
+  knitr::kable()
+##yup outliers
+
+
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro_adjacency, fill = urban_influence, height=..density..)) +
+  geom_joy(scale = 0.85, alpha = 0.3) 
+```
+
+would it be worth it to test with these collapsed factors? metro_adjacency simply functions as a collapsing of the urban_influence variable.
+
+there's some possible interaction on pure_population with urban influence at the small population levels but it's probably a result of small sample size

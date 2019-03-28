@@ -7,14 +7,14 @@ Laura Cosgrove
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ──────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
+    ## ── Attaching packages ───────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
 
     ## ✔ ggplot2 3.1.0     ✔ purrr   0.2.5
     ## ✔ tibble  1.4.2     ✔ dplyr   0.7.8
     ## ✔ tidyr   0.8.2     ✔ stringr 1.3.1
     ## ✔ readr   1.1.1     ✔ forcats 0.3.0
 
-    ## ── Conflicts ─────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ──────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
 
@@ -149,3 +149,110 @@ heart %>%
 ![](laura_eda_files/figure-markdown_github/unnamed-chunk-4-3.png)
 
 Not a huge consistent effect for these area and economic typologies.
+
+``` r
+heart <- heart %>% 
+  mutate(pure_population = fct_collapse(population_ruccs, "> 1,000,000" = "Metro > 1 million",
+                                        "250,000 - 1,000,000" = "Metro 250k - 1 million",
+                                        "< 250,000" = "Metro <250k",
+                                        ">20,000" = c("Urban >20,000 metro-adjacent", "Urban >20,000 metro non-adjacent"),
+                                        "2,500 - <20,000" = c("Urban 2,500-19,999 metro-adjacent", "Urban 2,500-19,999 metro non-adjacent"),
+                                        "< 2,500" = c("Rural metro-adjacent", "Rural metro non-adjacent")),
+         metro_adjacency = fct_collapse(population_ruccs, metro = c("Metro > 1 million", "Metro 250k - 1 million", "Metro <250k"),
+                                        adjacent = c("Urban >20,000 metro-adjacent", "Urban 2,500-19,999 metro-adjacent", "Rural metro-adjacent"),
+                                        nonadjacent = c("Urban >20,000 metro non-adjacent", "Urban 2,500-19,999 metro non-adjacent", "Rural metro non-adjacent")))
+
+heart %>% 
+  select(pure_population, metro_adjacency)
+```
+
+    ## # A tibble: 2,132 x 2
+    ##    pure_population metro_adjacency
+    ##    <fct>           <fct>          
+    ##  1 > 1,000,000     metro          
+    ##  2 2,500 - <20,000 adjacent       
+    ##  3 < 2,500         nonadjacent    
+    ##  4 >20,000         adjacent       
+    ##  5 < 2,500         nonadjacent    
+    ##  6 2,500 - <20,000 adjacent       
+    ##  7 > 1,000,000     metro          
+    ##  8 >20,000         adjacent       
+    ##  9 > 1,000,000     metro          
+    ## 10 < 250,000       metro          
+    ## # ... with 2,122 more rows
+
+``` r
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = pure_population, fill = metro_ruccs, height=..density..)) +
+  geom_joy(scale = 0.85)
+```
+
+    ## Picking joint bandwidth of 15.4
+
+![](laura_eda_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+``` r
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = pure_population, fill = urban_influence, height=..density..)) +
+  geom_joy(scale = 0.85, alpha = 0.3)
+```
+
+    ## Picking joint bandwidth of 21.5
+
+![](laura_eda_files/figure-markdown_github/unnamed-chunk-5-2.png)
+
+``` r
+##sample size of what's shown above?
+heart %>% group_by(urban_influence, pure_population) %>% 
+  summarize(count = n()) %>% 
+  arrange(count) %>% 
+  knitr::kable()
+```
+
+| urban\_influence | pure\_population    |  count|
+|:-----------------|:--------------------|------:|
+| 4                | &gt;20,000          |      1|
+| 6                | &gt;20,000          |      2|
+| 12               | 2,500 - &lt;20,000  |      3|
+| 11               | &lt; 2,500          |      6|
+| 10               | 2,500 - &lt;20,000  |      7|
+| 5                | &lt; 2,500          |      8|
+| 3                | &lt; 2,500          |      8|
+| 7                | 2,500 - &lt;20,000  |     14|
+| 9                | &lt; 2,500          |     19|
+| 6                | &lt; 2,500          |     19|
+| 4                | &lt; 2,500          |     23|
+| 3                | 2,500 - &lt;20,000  |     24|
+| 8                | &lt; 2,500          |     37|
+| 8                | &gt;20,000          |     59|
+| 3                | &gt;20,000          |     59|
+| 8                | 2,500 - &lt;20,000  |     68|
+| 5                | 2,500 - &lt;20,000  |     74|
+| 4                | 2,500 - &lt;20,000  |     77|
+| 11               | 2,500 - &lt;20,000  |     82|
+| 7                | &lt; 2,500          |     89|
+| 5                | &gt;20,000          |    110|
+| 9                | 2,500 - &lt;20,000  |    118|
+| 10               | &lt; 2,500          |    129|
+| 12               | &lt; 2,500          |    144|
+| 6                | 2,500 - &lt;20,000  |    209|
+| 2                | &lt; 250,000        |    210|
+| 2                | 250,000 - 1,000,000 |    245|
+| 1                | &gt; 1,000,000      |    288|
+
+``` r
+##yup outliers
+
+
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro_adjacency, fill = urban_influence, height=..density..)) +
+  geom_joy(scale = 0.85, alpha = 0.3) 
+```
+
+    ## Picking joint bandwidth of 18.8
+
+![](laura_eda_files/figure-markdown_github/unnamed-chunk-5-3.png)
+
+would it be worth it to test with these collapsed factors? metro\_adjacency simply functions as a collapsing of the urban\_influence variable.
+
+there's some possible interaction on pure\_population with urban influence at the small population levels but it's probably a result of small sample size
