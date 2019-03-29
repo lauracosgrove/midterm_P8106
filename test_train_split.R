@@ -72,7 +72,7 @@ data <- data %>%
                                         nonadjacent = c("Urban >20,000 metro non-adjacent", "Urban 2,500-19,999 metro non-adjacent", "Rural metro non-adjacent")))
 
 ### Removing variables with NA Values
-data_noNA <- data %>% 
+data <- data %>% 
   select(-health__homicides_per_100k, 
          -health__pct_excessive_drinking)
 #two missingest variables
