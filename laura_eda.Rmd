@@ -191,6 +191,27 @@ heart_attacks_cor %>%
 heart_attacks_cor %>% 
   arrange(abs(correlation))
 
+heart_attacks_cor %>% knitr::kable()
 ```
 
 Above are the most highly-correlated variables with our outcome, and the least-correlated.
+
+## New data export
+
+```{r}
+write_csv(heart, "./data/laura_test_version.csv")
+```
+
+## Missing data !!! 
+
+missing data is a big deal for analysis
+
+```{r}
+heart <- read_csv("./data/laura_test_version.csv") %>% 
+  select(-row_id)
+
+skimr::skim(heart)
+
+```
+
+

@@ -1,0 +1,113 @@
+---
+title: "Laura_modeling"
+author: "Laura Cosgrove"
+date: "3/28/2019"
+output: github_document
+---
+
+
+```{r, message = FALSE}
+library(tidyverse)
+library(caret)
+library(modelr)
+library(glmnet)
+library(pls)
+```
+
+```{r}
+heart <- read_csv("./data/laura_test_version.csv") %>% 
+  select(-row_id)
+
+skimr::skim(heart)
+#removing var with over 10% missing health__homicides_per_100k, health__pct_excessive_drinking
+
+heart <- heart %>% 
+  select(-health__homicides_per_100k, 
+    -health__pct_excessive_drinking)
+#two missingest variables
+
+heart_nona <- heart %>% 
+  drop_na()
+
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart_nona)[,-1]
+y <- heart_nona$heart_disease_mortality_per_100k
+```
+
+Set up `caret` training control. We will use this for all models.
+
+```{r}
+set.seed(100)
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+```
+
+### Ridge
+
+Cross validate to find the optimal lambda value.
+
+```{r}
+set.seed(100)
+
+ridge_fit <- train(x, y,
+                     method = "glmnet",
+                     tuneGrid = expand.grid(alpha = 0, 
+                                            lambda = exp(seq(-1, 12, length = 200))),
+                    #preProc = c("center", "scale"),
+                     trControl = ctrl1)
+
+
+plot(ridge_fit, xTrans = function(x) log(x)) #in correct range
+
+best_lambda_ridge = ridge_fit$bestTune$lambda # lower lambda bc adjusted bounds
+
+
+#ridge_pred <- predict(ridge_fit$finalModel, s = best_lambda_ridge, newx = x_test)
+
+#ridge_MSE = mean((ridge_pred - y_test)^2) #slightly lower mse
+
+#Glmnet for vizualization #i think this is bad
+ridge_cv_glmnet <- cv.glmnet(x, y, 
+                      alpha = 0, 
+                      lambda = exp(seq(-1, 12, length = 200)), 
+                      type.measure = "mse")
+
+plot(ridge_cv_glmnet, xvar = "lambda", label = TRUE)
+
+plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda")
+
+ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
+
+##MSE
+ridge_cv_table %>% 
+  arrange(mse) %>% 
+  filter(lambda_values == best_lambda_ridge)
+
+ridge_mse_plot <- ridge_cv_table %>% 
+  filter(lambda_values %in% exp(seq(-1, 4, length = 200))) %>% 
+  ggplot(aes(x = log(lambda_values), y = mse)) +
+  geom_point() +
+  geom_point(aes(x = log(best_lambda_ridge), y = 995), color = "red") +
+  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.1)
+  
+ridge_mse_plot + annotate("text", x = 0.5 + log(best_lambda_ridge), y = 985, label = "Lambda chosen by caret", color = "red")
+#for fun
+
+
+## Fit a glmnet with besttune from caret
+
+ridge_glmnet <- glmnet(x, y, alpha = 0, lambda = best_lambda_ridge)
+
+broom::tidy(ridge_glmnet) %>% 
+  arrange(abs(estimate)) #see shrunk coefficients with lambda chosen by caret
+
+predict(ridge_glmnet, s = best_lambda_ridge, type="coefficients") 
+```
+
+Our best lambda is `r best_lambda_ridge`, but it's not an entirely stable value because RMSE does not differ substantially in the range; that is, glm chooses a different value. I think we should proceed with the lambda chosen by caret because of its more stringent shrinking power. With that, our MSE is:
+
+```{r}
+ridge_cv_table %>% 
+  arrange(mse) %>% 
+  filter(lambda_values == best_lambda_ridge) %>% 
+  knitr::kable()
+```
+
