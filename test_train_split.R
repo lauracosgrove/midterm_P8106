@@ -40,11 +40,19 @@ data <- data %>%
       "Noncore adjacent to micro area and does not contain a town of at least 2,500 residents",
       "Noncore not adjacent to a metro/micro area and contains a town of 2,500  or more residents",
       "Noncore not adjacent to a metro/micro area and does not contain a town of at least 2,500 residents"),
-      labels = 1:12)) %>% 
+      labels = 1:12),
+    demo__pct_nonwhite = demo__pct_hispanic + 
+      demo__pct_asian + 
+      demo__pct_american_indian_or_alaskan_native + 
+      demo__pct_non_hispanic_african_american) %>% 
   mutate(area__urban_influence = fct_rev(area__urban_influence)) %>% 
   rename(metro_ruccs = metro, 
          population_ruccs = population,
-         urban_influence = area__urban_influence)
+         urban_influence = area__urban_influence) %>%
+  select(-demo__pct_hispanic, 
+         -demo__pct_asian,
+         -demo__pct_american_indian_or_alaskan_native, 
+         -demo__pct_non_hispanic_african_american)
 
 data <- data %>% 
   rename(economic_typology = econ__economic_typology) %>% 
@@ -63,7 +71,7 @@ data <- data %>%
                                         nonadjacent = c("Urban >20,000 metro non-adjacent", "Urban 2,500-19,999 metro non-adjacent", "Rural metro non-adjacent")))
 
 ### Removing variables with NA Values
-data <- data %>% 
+data_noNA <- data %>% 
   select(-health__homicides_per_100k, 
          -health__pct_excessive_drinking)
 #two missingest variables
@@ -73,13 +81,14 @@ data <- data %>%
 set.seed(1)
 train_ind <- sample(seq_len(nrow(data)), size = 2/3*nrow(data))
 
-train <- data[train_ind, ]
+train_full <- data[train_ind, ]
 test <- data[-train_ind, ]
 
 ##Drop NA columns for train
-train <- train %>% 
+train_noNA <- train_full %>% 
   drop_na()
 # 2132 --> 1606
 
-write.csv(train, file = './data/train.csv', row.names = F)
+write.csv(train_full, file = './data/train_full.csv', row.names = F)
+write.csv(train_noNA, file = './data/train_noNA.csv', row.names = F)
 write.csv(test, file = './data/test.csv', row.names = F)
