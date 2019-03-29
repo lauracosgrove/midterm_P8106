@@ -52,7 +52,8 @@ data <- data %>%
   select(-demo__pct_hispanic, 
          -demo__pct_asian,
          -demo__pct_american_indian_or_alaskan_native, 
-         -demo__pct_non_hispanic_african_american)
+         -demo__pct_non_hispanic_african_american,
+         -demo__pct_non_hispanic_white)
 
 data <- data %>% 
   rename(economic_typology = econ__economic_typology) %>% 
