@@ -160,7 +160,6 @@ heart %>%
   cor() %>% 
   corrplot::corrplot(method = "ellipse")
 
-heart$eco
 ```
 
 Health statistics related to healthy behaviors are highly intercorrelated: obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity. Less so are more environment- or "acts of God"-related health behaviors: particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated).
