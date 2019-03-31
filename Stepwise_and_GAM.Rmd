@@ -1,0 +1,72 @@
+---
+title: "Stepwise and GAM"
+author: "Alyssa Vanderbeek (amv2187)"
+date: "3/31/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+```
+
+Data import 
+
+```{r}
+heart = readr::read_csv("data/train_noNA.csv") %>%
+  mutate(population_ruccs = as.factor(population_ruccs),
+         urban_influence = as.factor(urban_influence),
+         metro_ruccs = as.factor(metro_ruccs)) %>% 
+  select(-row_id, -yr)
+
+test = readr::read_csv("data/test.csv") %>% 
+  mutate(population_ruccs = as.factor(population_ruccs),
+         urban_influence = as.factor(urban_influence),
+         metro_ruccs = as.factor(metro_ruccs)) %>% 
+  select(-row_id, -yr) %>%
+  drop_na()
+```
+
+Stepwise model 
+
+```{r}
+# Stepwise model selection
+step.fit = step(lm(heart_disease_mortality_per_100k ~ ., data = heart))
+summary(step.fit)
+
+# predict on test data
+pred.step = predict.lm(step.fit, newdata = test)
+mean((pred.step - test$heart_disease_mortality_per_100k)^2) # MSE
+```
+
+GAM
+
+```{r}
+# GAM using predictors selected by the stepwise selection method
+gam.fit = mgcv::gam(heart_disease_mortality_per_100k ~ urban_influence + s(econ__pct_civilian_labor) +
+                      s(econ__pct_uninsured_adults) + s(econ__pct_uninsured_children) +
+                      s(demo__pct_female) + (demo__pct_below_18_years_of_age) +
+                      s(demo__pct_aged_65_years_and_older) + s(demo__pct_adults_less_than_a_high_school_diploma) +
+                      s(demo__pct_adults_with_high_school_diploma) + s(demo__birth_rate_per_1k) +
+                      s(demo__death_rate_per_1k) + s(health__pct_adult_obesity) +
+                      s(health__pct_diabetes) + s(health__pct_low_birthweight) +
+                      s(health__pct_physical_inacticity) + health__air_pollution_particulate_matter +
+                      s(health__motor_vehicle_crash_deaths_per_100k) + s(health__pop_per_primary_care_physician) +
+                      s(demo__pct_nonwhite),
+                    data = heart)
+
+# gam.fit = mgcv::gam(heart_disease_mortality_per_100k ~ metro_ruccs + population_ruccs + urban_influence + economic_typology + s(econ__pct_civilian_labor) + s(econ__pct_unemployment) + s(econ__pct_uninsured_adults) + s(econ__pct_uninsured_children) + s(demo__pct_female) + s(demo__pct_below_18_years_of_age) + s(demo__pct_aged_65_years_and_older) + s(demo__pct_adults_less_than_a_high_school_diploma) + s(demo__pct_adults_with_high_school_diploma) + s(demo__pct_adults_with_some_college) + s(demo__pct_adults_bachelors_or_higher) + s(demo__birth_rate_per_1k) + s(demo__death_rate_per_1k) + health__air_pollution_particulate_matter + s(health__pct_adult_obesity) + s(health__pct_diabetes) + s(health__pct_adult_smoking) + s(health__pct_low_birthweight) + s(health__pct_physical_inacticity) + s(health__motor_vehicle_crash_deaths_per_100k) + s(health__pop_per_dentist) + s(health__pop_per_primary_care_physician),
+#                     data = heart)
+
+summary(gam.fit)
+# plot(gam.fit)
+
+## Predict on test data
+
+pred.gam = mgcv::predict.gam(gam.fit, newdata = test)
+mean((pred.gam - test$heart_disease_mortality_per_100k)^2) # MSE
+```
+
+
+
