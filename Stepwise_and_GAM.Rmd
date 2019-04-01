@@ -78,15 +78,16 @@ heart2 = heart %>% mutate(metro_ruccs = as.numeric(metro_ruccs),
                  population_ruccs = as.numeric(population_ruccs),
                  urban_influence = as.numeric(urban_influence),
                  economic_typology = as.numeric(economic_typology))
-x2 <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart2)[1:50, 10:25] # get rid of factor vairables / work with smaller dataset so R doesn't crash
-y2 <- heart2$heart_disease_mortality_per_100k[1:50]
+x2 <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart2)[1:500, 2:25] # get rid of factor vairables / work with smaller dataset so R doesn't crash
+y2 <- heart2$heart_disease_mortality_per_100k[1:500]
 
 set.seed(2)
 gam.fit <- caret::train(x2, y2,
                  method = "bam",
                  metric = 'RMSE',
                  tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
-                 trControl = trainControl(method = "cv", number = 10))
+                 trControl = trainControl(method = "cv", number = 10),
+                 preProcess = c("center", "scale"))
 
 gam.fit$bestTune
 
