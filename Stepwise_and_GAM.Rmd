@@ -9,6 +9,8 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
+library(mgcv)
+library(nlme)
 ```
 
 Data import 
@@ -17,22 +19,48 @@ Data import
 heart = readr::read_csv("data/train_noNA.csv") %>%
   mutate(population_ruccs = as.factor(population_ruccs),
          urban_influence = as.factor(urban_influence),
-         metro_ruccs = as.factor(metro_ruccs)) %>% 
-  select(-row_id, -yr)
+         metro_ruccs = as.factor(metro_ruccs),
+         economic_typology = as.factor(economic_typology)) %>% 
+  select(-row_id, -yr, -pure_population, -metro_adjacency)
+
+# heart = readr::read_csv("data/train_noNA.csv") %>%
+#   mutate(population_ruccs = factor(population_ruccs, c("Metro > 1 million", "Metro 250k - 1 million", "Metro <250k", "Urban >20,000 metro-adjacent", "Urban >20,000 metro non-adjacent","Urban 2,500-19,999 metro-adjacent", "Urban 2,500-19,999 metro non-adjacent", "Rural metro-adjacent", "Rural metro non-adjacent"), labels = 1:9),
+#          urban_influence = as.factor(urban_influence),
+#          metro_ruccs = as.factor(metro_ruccs),
+#          economic_typology = as.factor(economic_typology)) %>% 
+#   select(-row_id, -yr)
 
 test = readr::read_csv("data/test.csv") %>% 
   mutate(population_ruccs = as.factor(population_ruccs),
          urban_influence = as.factor(urban_influence),
-         metro_ruccs = as.factor(metro_ruccs)) %>% 
+         metro_ruccs = as.factor(metro_ruccs),
+         economic_typology = as.factor(economic_typology)) %>% 
   select(-row_id, -yr) %>%
   drop_na()
+
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+y <- heart$heart_disease_mortality_per_100k
 ```
 
 Stepwise model 
 
 ```{r}
 # Stepwise model selection
-step.fit = step(lm(heart_disease_mortality_per_100k ~ ., data = heart))
+step.coef = step(lm(heart_disease_mortality_per_100k ~ ., data = heart))
+step.fit = caret::train(heart_disease_mortality_per_100k ~ urban_influence + econ__pct_civilian_labor + 
+    econ__pct_uninsured_adults + econ__pct_uninsured_children + 
+    demo__pct_female + demo__pct_below_18_years_of_age + demo__pct_aged_65_years_and_older + 
+    demo__pct_adults_less_than_a_high_school_diploma + demo__pct_adults_with_high_school_diploma + 
+    demo__birth_rate_per_1k + demo__death_rate_per_1k + health__pct_adult_obesity + 
+    health__pct_diabetes + health__pct_low_birthweight + health__pct_physical_inacticity + 
+    health__air_pollution_particulate_matter + health__motor_vehicle_crash_deaths_per_100k + 
+    health__pop_per_dentist + health__pop_per_primary_care_physician + 
+    demo__pct_nonwhite,
+                        data = heart, 
+                        method = 'lm',
+                        metric = 'RMSE',
+                        trControl = trainControl(method = "cv", number = 10),
+                        preProcess = c("zv", "center", "scale"))
 summary(step.fit)
 
 # predict on test data
@@ -44,28 +72,38 @@ GAM
 
 ```{r}
 # GAM using predictors selected by the stepwise selection method
-gam.fit = mgcv::gam(heart_disease_mortality_per_100k ~ urban_influence + s(econ__pct_civilian_labor) +
-                      s(econ__pct_uninsured_adults) + s(econ__pct_uninsured_children) +
-                      s(demo__pct_female) + (demo__pct_below_18_years_of_age) +
-                      s(demo__pct_aged_65_years_and_older) + s(demo__pct_adults_less_than_a_high_school_diploma) +
-                      s(demo__pct_adults_with_high_school_diploma) + s(demo__birth_rate_per_1k) +
-                      s(demo__death_rate_per_1k) + s(health__pct_adult_obesity) +
-                      s(health__pct_diabetes) + s(health__pct_low_birthweight) +
-                      s(health__pct_physical_inacticity) + health__air_pollution_particulate_matter +
-                      s(health__motor_vehicle_crash_deaths_per_100k) + s(health__pop_per_primary_care_physician) +
-                      s(demo__pct_nonwhite),
-                    data = heart)
 
-# gam.fit = mgcv::gam(heart_disease_mortality_per_100k ~ metro_ruccs + population_ruccs + urban_influence + economic_typology + s(econ__pct_civilian_labor) + s(econ__pct_unemployment) + s(econ__pct_uninsured_adults) + s(econ__pct_uninsured_children) + s(demo__pct_female) + s(demo__pct_below_18_years_of_age) + s(demo__pct_aged_65_years_and_older) + s(demo__pct_adults_less_than_a_high_school_diploma) + s(demo__pct_adults_with_high_school_diploma) + s(demo__pct_adults_with_some_college) + s(demo__pct_adults_bachelors_or_higher) + s(demo__birth_rate_per_1k) + s(demo__death_rate_per_1k) + health__air_pollution_particulate_matter + s(health__pct_adult_obesity) + s(health__pct_diabetes) + s(health__pct_adult_smoking) + s(health__pct_low_birthweight) + s(health__pct_physical_inacticity) + s(health__motor_vehicle_crash_deaths_per_100k) + s(health__pop_per_dentist) + s(health__pop_per_primary_care_physician),
-#                     data = heart)
+# convert factors variables back to numeric
+heart2 = heart %>% mutate(metro_ruccs = as.numeric(metro_ruccs),
+                 population_ruccs = as.numeric(population_ruccs),
+                 urban_influence = as.numeric(urban_influence),
+                 economic_typology = as.numeric(economic_typology))
+x2 <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart2)[1:50, 10:25] # get rid of factor vairables / work with smaller dataset so R doesn't crash
+y2 <- heart2$heart_disease_mortality_per_100k[1:50]
 
-summary(gam.fit)
-# plot(gam.fit)
+set.seed(2)
+gam.fit <- caret::train(x2, y2,
+                 method = "bam",
+                 metric = 'RMSE',
+                 tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
+                 trControl = trainControl(method = "cv", number = 10))
+
+gam.fit$bestTune
+
+gam.fit$finalModel
 
 ## Predict on test data
 
 pred.gam = mgcv::predict.gam(gam.fit, newdata = test)
 mean((pred.gam - test$heart_disease_mortality_per_100k)^2) # MSE
+```
+
+
+```{r}
+summary(resamples(list(
+  stepwise = step.fit)))$statistics$RMSE %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
 
