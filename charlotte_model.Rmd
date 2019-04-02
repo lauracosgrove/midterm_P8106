@@ -1,0 +1,98 @@
+---
+title: "Charlotte_modeling"
+author: "Charlotte Abrams"
+output: github_document
+---
+
+```{r, message = FALSE}
+library(tidyverse)
+library(caret)
+library(modelr)
+library(glmnet)
+library(pls)
+```
+
+```{r}
+heart <- read_csv("./data/train_noNA.csv") %>% 
+  select(-row_id)
+
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+y <- heart$heart_disease_mortality_per_100k
+```
+
+Set up `caret` training control. 
+
+```{r}
+set.seed(100)
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+```
+
+## Lasso
+
+Cross validate to find the optimal lambda value.
+
+```{r}
+set.seed(100)
+
+lasso_fit <- train(x, y,
+                     method = "glmnet",
+                     tuneGrid = expand.grid(alpha = 1, 
+                                            lambda = exp(seq(-4, 4, length = 200))),
+                    preProc = c("center", "scale"),
+                    trControl = ctrl1)
+
+
+plot(lasso_fit, xTrans = function(x) log(x)) #in correct range
+
+best_lambda_lasso = lasso_fit$bestTune$lambda # lower lambda bc adjusted bounds
+
+##centered, scaled coefficients from caret
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type="coefficients") %>% 
+  broom::tidy() %>% 
+  arrange(desc(abs(value)))
+
+
+
+#saving caret object to rdata
+saveRDS(lasso_fit, "lasso.rds")
+```
+
+
+## PCR
+
+```{r, echo = T, message = FALSE, results='hide', warning=FALSE}
+library(pdp)
+#library(earth)
+#library(vip)
+#library(patchwork)
+
+set.seed(100)
+pcr_fit <- train(x,y, 
+  method = "pcr",
+  trControl = trainControl(method = "cv", number = 10),
+  metric = "RMSE",
+  preProcess = c("zv", "center", "scale"),
+  tuneLength = 20
+  )
+
+plot(pcr_fit, xTrans = function(x) log(x)) 
+
+pred_pcr <- predict(pcr_fit, 
+                      ncomp = 35)
+
+
+#saving caret object to rdata
+saveRDS(pcr_fit, "pcr.rds")
+
+save(pcr_fit, file = 'pcr.RData')
+#Calculate accuracy with MSE
+#MSE = mean((pred_pcr - y)^2)
+#print(MSE)
+
+```
+
+
+
+
+
+
