@@ -59,9 +59,10 @@ step.fit = caret::train(heart_disease_mortality_per_100k ~ urban_influence + eco
                         data = heart, 
                         method = 'lm',
                         metric = 'RMSE',
-                        trControl = trainControl(method = "cv", number = 10),
+                        trControl = trainControl(method = "repeatedcv", number = 10, repeats = 5),
                         preProcess = c("zv", "center", "scale"))
 summary(step.fit)
+
 
 # predict on test data
 pred.step = predict.lm(step.fit, newdata = test)
@@ -78,18 +79,17 @@ heart2 = heart %>% mutate(metro_ruccs = as.numeric(metro_ruccs),
                  population_ruccs = as.numeric(population_ruccs),
                  urban_influence = as.numeric(urban_influence),
                  economic_typology = as.numeric(economic_typology))
-x2 <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart2)[1:500, 2:25] # get rid of factor vairables / work with smaller dataset so R doesn't crash
-y2 <- heart2$heart_disease_mortality_per_100k[1:500]
+x2 <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart2)[, -1] # get rid of factor vairables / work with smaller dataset so R doesn't crash
+y2 <- heart2$heart_disease_mortality_per_100k
 
 set.seed(2)
 gam.fit <- caret::train(x2, y2,
                  method = "bam",
                  metric = 'RMSE',
                  tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
-                 trControl = trainControl(method = "cv", number = 10),
+                 trControl = trainControl(method = "repeatedcv", number = 10, repeats = 5),
                  preProcess = c("center", "scale"))
 
-gam.fit$bestTune
 
 gam.fit$finalModel
 
@@ -101,10 +101,8 @@ mean((pred.gam - test$heart_disease_mortality_per_100k)^2) # MSE
 
 
 ```{r}
-summary(resamples(list(
-  stepwise = step.fit)))$statistics$RMSE %>%
-  kableExtra::kable() %>%
-  kableExtra::kable_styling(bootstrap_options = c("striped", "hover"))
+saveRDS(step.fit, 'lm_step.rds')
+saveRDS(gam.fit, 'gam_fit.rds')
 ```
 
 
