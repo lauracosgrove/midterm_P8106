@@ -55,7 +55,6 @@ predict(ridge_fit$finalModel, s = best_lambda_ridge, type="coefficients") %>%
 
 #saving caret object to rdata
 saveRDS(ridge_fit, "ridge.rds")
-
 ```
 
 Our best lambda is `r best_lambda_ridge`, but it's not an entirely stable value because RMSE does not differ substantially in the range; that is, glm chooses a different value: 
