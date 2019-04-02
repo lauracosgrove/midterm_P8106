@@ -53,6 +53,8 @@ predict(ridge_fit$finalModel, s = best_lambda_ridge, type="coefficients") %>%
   broom::tidy() %>% 
   arrange(desc(abs(value)))
 
+#saving caret object to rdata
+saveRDS(ridge_fit, "ridge.rds")
 ```
 
 Our best lambda is `r best_lambda_ridge`, but it's not an entirely stable value because RMSE does not differ substantially in the range; that is, glm chooses a different value: 
@@ -118,6 +120,9 @@ ggplot(mars_fit)
 mars_fit$bestTune
 
 mars_fit$finalModel$gcv #metric earth uses to choose
+
+#saving caret object to rdata
+saveRDS(mars_fit, "mars.rds")
 ```
 
 To better understand the relationship between these features and `heart_disease_mortality_per_100k`, we can create partial dependence plots (PDPs) for each feature individually and also an interaction PDP. This is used to examine the marginal effects of predictors.
@@ -146,9 +151,10 @@ gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 
 ## Ridge and MARS comparison
 ```{r}
+set.seed(100)
 summary(resamples(list(
   ridge = ridge_fit,
-  MARS = mars_fit)))
+  MARS = mars_fit)))$statistics$RMSE
 ```
 
 

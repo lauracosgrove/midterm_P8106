@@ -182,6 +182,11 @@ predict(ridge_fit$finalModel, s = best_lambda_ridge, type="coefficients") %>%
     ## 46   0.2361675
     ## 47  -0.1571535
 
+``` r
+#saving caret object to rdata
+saveRDS(ridge_fit, "ridge.rds")
+```
+
 Our best lambda is 4.0838296, but it's not an entirely stable value because RMSE does not differ substantially in the range; that is, glm chooses a different value:
 
 ``` r
@@ -301,6 +306,11 @@ mars_fit$finalModel$gcv #metric earth uses to choose
 
     ## [1] 844.88
 
+``` r
+#saving caret object to rdata
+saveRDS(mars_fit, "mars.rds")
+```
+
 To better understand the relationship between these features and `heart_disease_mortality_per_100k`, we can create partial dependence plots (PDPs) for each feature individually and also an interaction PDP. This is used to examine the marginal effects of predictors.
 
 A nice way to visualize especially these black box models. We see that the model fitted by MARS gives a smaller cross validation error, because we're carefully tuning those nonlinear terms.
@@ -373,32 +383,14 @@ Ridge and MARS comparison
 -------------------------
 
 ``` r
+set.seed(100)
 summary(resamples(list(
   ridge = ridge_fit,
-  MARS = mars_fit)))
+  MARS = mars_fit)))$statistics$RMSE
 ```
 
-    ## 
-    ## Call:
-    ## summary.resamples(object = resamples(list(ridge = ridge_fit, MARS
-    ##  = mars_fit)))
-    ## 
-    ## Models: ridge, MARS 
-    ## Number of resamples: 50 
-    ## 
-    ## MAE 
-    ##           Min.  1st Qu.   Median     Mean  3rd Qu.     Max. NA's
-    ## ridge 20.43485 23.28392 24.22628 24.29979 25.12464 27.90931    0
-    ## MARS  21.02595 23.03629 23.96363 24.01990 24.98616 27.80645    0
-    ## 
-    ## RMSE 
     ##           Min.  1st Qu.   Median     Mean  3rd Qu.     Max. NA's
     ## ridge 26.29574 30.85310 31.95307 31.88402 33.40691 36.74570    0
     ## MARS  27.07862 29.49042 31.66372 31.54741 33.29575 37.73065    0
-    ## 
-    ## Rsquared 
-    ##            Min.   1st Qu.    Median      Mean   3rd Qu.      Max. NA's
-    ## ridge 0.6530259 0.6847674 0.7020812 0.7060677 0.7280034 0.7824860    0
-    ## MARS  0.6076495 0.6930541 0.7234624 0.7144570 0.7436744 0.7739719    0
 
 On average, the MARS fit is slightly better.
