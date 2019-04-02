@@ -5,8 +5,8 @@ date: "3/26/2019"
 output: github_document
 ---
 ## Introduction
-### Background
-### Exploratory Data Analysis
+### Background (Alyssa)
+### Exploratory Data Analysis (Laura)
 
 ## Linear Models
 
@@ -28,12 +28,14 @@ output: github_document
 
 ### KNN?
 
-## Conclusions
+## Conclusions 
 
 ### Training RMSE
 
 ```{r}
 set.seed(100)
+library(tidyverse)
+library(caret)
 
 ridge_fit <- readRDS("ridge.rds")
 mars_fit <- readRDS("mars.rds")
@@ -54,7 +56,7 @@ res2 <- resamples(list(
 
 
 p1 <- ggplot(res, metric = "RMSE") +
-  theme_minimal
+  theme_minimal()
 
 p2 <- ggplot(res2, metric = "RMSE") +
   theme_minimal()
@@ -66,6 +68,6 @@ p1 / p2
 ```
 
 
-### Test RMSE
+### Test RMSE (Alyssa)
 
-### Interpretations
+### Interpretations (Laura)
