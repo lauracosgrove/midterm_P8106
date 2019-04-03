@@ -20,6 +20,9 @@ heart <- read_csv("./data/train_noNA.csv") %>%
 
 x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
 y <- heart$heart_disease_mortality_per_100k
+
+nearZeroVar(x, names = TRUE)
+findLinearCombos(x)
 ```
 
 Set up `caret` training control. We will use this for all models.

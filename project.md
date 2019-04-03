@@ -92,6 +92,18 @@ ggplot(res, metric = "RMSE") +
 
 ![](project_files/figure-markdown_github/unnamed-chunk-1-1.png)
 
+The more flexible model
+
 ### Test RMSE (Alyssa)
 
+\*\*note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret?
+
 ### Interpretations (Laura)
+
+*Coefficient Shrinkage: Lasso and Ridge*
+
+*Investigation of MARS*
+
+The minimum generalized cross-validation error was achieved
+
+*Investigation of GAM*

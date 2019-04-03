@@ -59,7 +59,24 @@ ggplot(res, metric = "RMSE") +
   labs(title = "Resampled Training RMSE")
 ```
 
+The more flexible model 
 
 ### Test RMSE (Alyssa)
 
+**note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret?
+
+can consider imputation: say 10%, one possible solution. use the training set to build. Look at the preProcess function, can use knn. 
+
+Check/detect near-zero variance predictors: to decrease computational time and complexity.
+
+
+
 ### Interpretations (Laura)
+
+_Coefficient Shrinkage: Lasso and Ridge_
+
+_Investigation of MARS_
+
+The minimum generalized cross-validation error was achieved
+
+_Investigation of GAM_
