@@ -69,7 +69,7 @@ library(pdp)
 set.seed(100)
 pcr_fit <- train(x,y, 
   method = "pcr",
-  trControl = trainControl(method = "cv", number = 10),
+  trControl = ctrl1,
   metric = "RMSE",
   preProcess = c("zv", "center", "scale"),
   tuneLength = 20
@@ -84,7 +84,7 @@ pred_pcr <- predict(pcr_fit,
 #saving caret object to rdata
 saveRDS(pcr_fit, "pcr.rds")
 
-save(pcr_fit, file = 'pcr.RData')
+#save(pcr_fit, file = 'pcr.RData')
 #Calculate accuracy with MSE
 #MSE = mean((pred_pcr - y)^2)
 #print(MSE)

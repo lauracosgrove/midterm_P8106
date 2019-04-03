@@ -68,6 +68,7 @@ library(caret)
     ##     lift
 
 ``` r
+lm_fit <- readRDS("lm_step.rds")
 ridge_fit <- readRDS("ridge.rds")
 mars_fit <- readRDS("mars.rds")
 gam_fit <- readRDS("gam_fit.rds")
@@ -75,26 +76,18 @@ lasso_fit <- readRDS("lasso.rds")
 pcr_fit <- readRDS("pcr.rds")
 
 res <- resamples(list(
-  ridge = ridge_fit,
-  lasso = lasso_fit,
+  Stepwise = lm_fit,
+  Ridge = ridge_fit,
+  Lasso = lasso_fit,
+  PCR = pcr_fit,
+  GAM = gam_fit,
   MARS = mars_fit
   ))
 
-res2 <- resamples(list(
-  GAM = gam_fit,
-  pcr = pcr_fit))
 
-
-
-p1 <- ggplot(res, metric = "RMSE") +
-  theme_minimal()
-
-p2 <- ggplot(res2, metric = "RMSE") +
-  theme_minimal()
-
-library(patchwork)
-
-p1 / p2
+ggplot(res, metric = "RMSE") +
+  theme_minimal() +
+  labs(title = "Resampled Training RMSE")
 ```
 
 ![](project_files/figure-markdown_github/unnamed-chunk-1-1.png)
