@@ -149,15 +149,15 @@ A nice way to visualize especially these black box models. We see that the model
 vip::vip(mars_fit, num_features = 40, bar = FALSE, value = "gcv") + ggtitle("GCV")
 vip::vip(mars_fit, num_features = 40, bar = FALSE, value = "rss") + ggtitle("RSS")
 
-#Final coefficients: no interactions
+#Final coefficients: interactions
 coef(mars_fit$finalModel) %>%
   broom::tidy() %>% 
   knitr::kable()
 
 #Partial feature plots
 p1 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity"), grid.resolution = 10) %>% autoplot()
-p2 <- pdp::partial(mars_fit, pred.var = c("demo__birth_rate_per_1k"), grid.resolution = 10) %>% autoplot()
-p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__birth_rate_per_1k"), grid.resolution = 10) %>%  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
+p2 <- pdp::partial(mars_fit, pred.var = c("demo__pct_adults_less_than_a_high_school_diploma"), grid.resolution = 10) %>% autoplot()
+p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__pct_adults_less_than_a_high_school_diploma"), grid.resolution = 10) %>%  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
 
 gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 ```

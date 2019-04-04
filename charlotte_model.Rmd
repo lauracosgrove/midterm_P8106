@@ -37,7 +37,8 @@ set.seed(100)
 lasso_fit <- train(x, y,
                      method = "glmnet",
                      tuneGrid = expand.grid(alpha = 1, 
-                                            lambda = exp(seq(-4, 4, length = 200))),
+                                            lambda = exp(seq(-10, 0, length = 200))),
+                    preProcess = c("zv"),
                     trControl = ctrl1)
 
 
@@ -48,9 +49,11 @@ best_lambda_lasso = lasso_fit$bestTune$lambda # lower lambda bc adjusted bounds
 ##centered, scaled coefficients from caret
 predict(lasso_fit$finalModel, s = best_lambda_lasso, type="coefficients") %>% 
   broom::tidy() %>% 
-  arrange(desc(abs(value)))
+  arrange(desc(abs(value))) %>% 
+  top_n(10)
 
-
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type="coefficients") %>% 
+  dim()
 
 #saving caret object to rdata
 saveRDS(lasso_fit, "lasso.rds")
@@ -70,7 +73,7 @@ pcr_fit <- train(x,y,
   method = "pcr",
   trControl = ctrl1,
   metric = "RMSE",
-  tuneLength = 20
+  tuneLength = 200
   )
 
 plot(pcr_fit, xTrans = function(x) log(x)) 
