@@ -1,5 +1,7 @@
 library(tidyverse)
 library(readr)
+library(caret)
+library(RANN)
 
 ## Data import
 predictors <- read_csv("./data/Training_values.csv") 
@@ -53,8 +55,8 @@ data <- response %>%
                 -health__homicides_per_100k, # >90% missing
                 -health__pct_excessive_drinking, # >90% missing
                 -yr,
-                -population) 
-
+                -population,
+                -row_id) 
 
 ## training/test data
 set.seed(1)
