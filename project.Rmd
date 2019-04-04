@@ -265,17 +265,6 @@ pcr_fit <- caret::train(x, y,
 GAM:
 ```{r, eval=F}
 set.seed(2)
-gam.fit <- caret::train(x, y,
-                        method = "gam",
-                        metric = 'RMSE',
-                        tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
-                        trControl = ctrl)
-
-heart <- read_csv("./data/train_imputed.csv") 
-
-x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
-y <- heart$heart_disease_mortality_per_100k
-
 gam_fit <- caret::train(x, y, 
                         method = "gam",
                         metric = 'RMSE',
@@ -283,7 +272,6 @@ gam_fit <- caret::train(x, y,
                         trControl = ctrl)
 summary(gam_fit)
 saveRDS(gam_fit, "gam_fit_imputed.rds")
-
 
 ```
 
