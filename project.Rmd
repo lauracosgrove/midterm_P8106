@@ -51,7 +51,7 @@ res <- resamples(list(
   Ridge = ridge_fit,
   Lasso = lasso_fit,
   PCR = pcr_fit,
-  GAM = gam_fit,
+  GAM = gam_fit
   MARS = mars_fit
   ))
 
@@ -182,20 +182,34 @@ set.seed(2)
 step.fit = caret::train(heart_disease_mortality_per_100k ~ ., 
                         data = train_imputed, 
                         method = 'glmStepAIC',
-                        metric = 'RMSE',
+                        metric = "RMSE",
                         trControl = ctrl)
 ```
 
 
 Lasso:
 ```{r, eval=F}
-
+set.seed(2)
+lasso_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
+                          data = heart,
+                          method = "glmnet",
+                          metric = "RMSE",
+                          tuneGrid = expand.grid(alpha = 1,
+                                                lambda = exp(seq(-10, 0, length = 200))),
+                          preProcess = c("zv"),
+                          trControl = ctrl)
 ```
 
 
 Ridge:
 ```{r, eval=F}
-
+set.seed(2)
+pcr_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
+                        data = heart,
+                        method = "pcr",
+                        trControl = ctrl,
+                        metric = "RMSE",
+                        tuneLength = 200)
 ```
 
 
