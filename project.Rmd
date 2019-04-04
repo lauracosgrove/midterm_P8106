@@ -37,10 +37,11 @@ set.seed(100)
 library(tidyverse)
 library(caret)
 
-lm_fit <- readRDS("lm_step.rds")
+lm_fit <- readRDS("lm_step_imputed.rds")
 ridge_fit <- readRDS("ridge.rds")
 mars_fit <- readRDS("mars.rds")
-gam_fit <- readRDS("gam_fit.rds")
+mars2_fit <- readRDS("mars2.rds")
+gam_fit <- readRDS("gam_fit_imputed.rds")
 lasso_fit <- readRDS("lasso.rds")
 pcr_fit <- readRDS("pcr.rds")
 
@@ -50,7 +51,7 @@ res <- resamples(list(
   Lasso = lasso_fit,
   PCR = pcr_fit,
   GAM = gam_fit,
-  MARS = mars_fit
+  MARS = mars2_fit
   ))
 
 
