@@ -52,7 +52,6 @@ Note that we chose the most parsimonious model.
 
 ### Training RMSE
 
-<<<<<<< HEAD
 ```{r}
 set.seed(100)
 library(tidyverse)
@@ -66,11 +65,7 @@ gam_fit <- readRDS("gam_fit_imputed.rds")
 lasso_fit <- readRDS("lasso.rds")
 pcr_fit <- readRDS("pcr.rds")
 
-=======
-```{r, echo=FALSE}
-set.seed(2)
 # resample each model to compare 
->>>>>>> 2917a6ffbd4a7d51de02c5325edd4de6bd3d8c97
 res <- resamples(list(
   Stepwise = lm_fit,
   Ridge = ridge_fit,
@@ -263,6 +258,21 @@ gam.fit <- caret::train(heart_disease_mortality_per_100k ~ .,
                         metric = 'RMSE',
                         tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
                         trControl = ctrl)
+
+heart <- read_csv("./data/train_imputed.csv") 
+
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+y <- heart$heart_disease_mortality_per_100k
+
+gam_fit <- caret::train(x, y, 
+                        method = "gam",
+                        metric = 'RMSE',
+                        tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
+                        trControl = ctrl)
+summary(gam_fit)
+saveRDS(gam_fit, "gam_fit_imputed.rds")
+
+
 ```
 
 
@@ -276,7 +286,7 @@ set.seed(2)
 mars_fit <- train(x, y,
                  method = "earth",
                  tuneGrid = mars_grid,
-                 trControl = ctrl1)
+                 trControl = ctrl)
 #based on initial results, choose parsimonious version
 mars_grid_refined <- expand.grid(degree = 2, 
                          nprune = 25:30) 
@@ -285,6 +295,6 @@ set.seed(2)
 mars_fit_refined <- train(x, y,
                  method = "earth",
                  tuneGrid = mars_grid_refined,
-                 trControl = ctrl1)
+                 trControl = ctrl)
 ```
 
