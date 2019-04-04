@@ -15,14 +15,21 @@ library(pls)
 ```
 
 ```{r}
-heart <- read_csv("./data/train_noNA.csv") %>% 
-  select(-row_id)
+heart_before <- read_csv("./data/train_before_imputed.csv")
+heart <- read_csv("./data/train_imputed.csv") 
 
 x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
 y <- heart$heart_disease_mortality_per_100k
 
 nearZeroVar(x, names = TRUE)
-findLinearCombos(x)
+findLinearCombos(x)$remove
+
+dimnames(x)[[2]][11]
+dimnames(x)[[2]][28]
+dimnames(x)[[2]][42]
+dimnames(x)[[2]][46]
+dimnames(x)[[2]][47]
+#Suggests we have some linear combinations, as we suspected.
 ```
 
 Set up `caret` training control. We will use this for all models.
@@ -42,14 +49,18 @@ set.seed(100)
 ridge_fit <- train(x, y,
                      method = "glmnet",
                      tuneGrid = expand.grid(alpha = 0, 
-                                            lambda = exp(seq(0, 10, length = 200))),
-                    preProc = c("center", "scale"),
+                                            lambda = exp(seq(-7, 6, length = 100))),
                     trControl = ctrl1)
 
 
 plot(ridge_fit, xTrans = function(x) log(x)) #in correct range
 
-best_lambda_ridge = ridge_fit$bestTune$lambda # lower lambda bc adjusted bounds
+best_lambda_ridge = ridge_fit$bestTune$lambda 
+
+summary(ridge_fit$finalModel)
+
+broom::tidy(ridge_fit$finalModel) %>% 
+  arrange(lambda)
 
 ##centered, scaled coefficients from caret
 predict(ridge_fit$finalModel, s = best_lambda_ridge, type="coefficients") %>% 
@@ -58,21 +69,22 @@ predict(ridge_fit$finalModel, s = best_lambda_ridge, type="coefficients") %>%
 
 #saving caret object to rdata
 saveRDS(ridge_fit, "ridge.rds")
+
 ```
 
 Our best lambda is `r best_lambda_ridge`, but it's not an entirely stable value because RMSE does not differ substantially in the range; that is, glm chooses a different value: 
 
 ```{r}
-
 #Using Glmnet for visualization 
 ridge_cv_glmnet <- cv.glmnet(x, y, 
                       alpha = 0, 
-                      lambda = exp(seq(0, 10, length = 200)), 
+                      lambda = exp(seq(-7, 6, length = 100)), 
                       type.measure = "mse")
 
 plot(ridge_cv_glmnet, xvar = "lambda", label = TRUE)
 
 plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda")
+abline(v = log(best_lambda_ridge), col = "blue")
 
 ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
 
@@ -82,17 +94,17 @@ ridge_cv_table_best <- ridge_cv_table %>%
   filter(lambda_values == best_lambda_ridge)
 
 ridge_mse_plot <- ridge_cv_table %>% 
-  filter(lambda_values %in% exp(seq(0, 4, length = 200))) %>% 
+  filter(lambda_values %in% exp(seq(-7, 6, length = 100))) %>% 
   ggplot(aes(x = log(lambda_values), y = mse)) +
   geom_point() +
   geom_point(aes(x = log(best_lambda_ridge), y = ridge_cv_table_best$mse), color = "red") +
-  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.1)
+  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3)
   
-ridge_mse_plot + annotate("text", x = 0.5 + log(best_lambda_ridge), y = 985, label = "Lambda chosen by caret", color = "red")
+ridge_mse_plot + annotate("text", x = 0.5 + log(best_lambda_ridge), y = ridge_cv_table_best$mse + 0.05, label = "Lambda chosen by caret", color = "red")
 #for fun
 ```
 
-I think we should proceed with the lambda chosen by caret for better comparison.
+We can see that all coefficients shrank, but none really shrank to 0. Ridge was not very effective at eliminating coefficients among values of candidate coefficients.
 
 ## MARS
 
@@ -109,7 +121,7 @@ Since there are two tuning parameters associated with the MARS model: the degree
 set.seed(100)
 
 mars_grid <- expand.grid(degree = 1:3, 
-                         nprune = 14:30) #degree: 1 vs 2 vs 3, no interaction vs. interaction;
+                         nprune = 24:40) #degree: 1 vs 2 vs 3, no interaction vs. interaction;
 #nprune is number of coef
 
 set.seed(2)
@@ -146,7 +158,6 @@ coef(mars_fit$finalModel) %>%
 p1 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity"), grid.resolution = 10) %>% autoplot()
 p2 <- pdp::partial(mars_fit, pred.var = c("demo__birth_rate_per_1k"), grid.resolution = 10) %>% autoplot()
 p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__birth_rate_per_1k"), grid.resolution = 10) %>%  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
-
 
 gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 ```
