@@ -19,25 +19,32 @@ Data import
 ```{r}
 heart = readr::read_csv("data/train_imputed.csv") %>%
   mutate(pure_population = as.factor(pure_population),
-         urban_influence = factor(urban_influence, labels = 1:12),
+         urban_influence = factor(urban_influence),
          economic_typology = as.factor(economic_typology),
          metro_adjacency = as.factor(metro_adjacency),
-         metro = as.factor(metro)) %>% 
-  dplyr::select(-row_id)
+         metro = as.factor(metro)) 
+  # dplyr::select(-health__motor_vehicle_crash_deaths_per_100k,
+  #               -health__pop_per_dentist,
+  #               -econ__pct_uninsured_children,
+  #               -demo__birth_rate_per_1k,
+  #               -econ__pct_civilian_labor) # variables I removed when I tried a more parsimonious model by removing suspected unimportant variables
+  
 
 test = readr::read_csv("data/test_imputed.csv") %>% 
   mutate(pure_population = as.factor(pure_population),
          urban_influence = as.factor(urban_influence),
          economic_typology = as.factor(economic_typology),
          metro_adjacency = as.factor(metro_adjacency),
-         metro = as.factor(metro)) %>% 
-  dplyr::select(-row_id)
+         metro = as.factor(metro))
 
 ```
 
 Stepwise model 
 
 ```{r}
+# x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+# y <- heart$heart_disease_mortality_per_100k
+
 # Stepwise model selection
 set.seed(2)
 step.fit = caret::train(heart_disease_mortality_per_100k ~ ., 

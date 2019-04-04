@@ -13,8 +13,12 @@ library(pls)
 ```
 
 ```{r}
-heart <- read_csv("./data/train_noNA.csv") %>% 
-  select(-row_id)
+heart = readr::read_csv("data/train_imputed.csv") %>%
+  mutate(pure_population = as.factor(pure_population),
+         urban_influence = factor(urban_influence),
+         economic_typology = as.factor(economic_typology),
+         metro_adjacency = as.factor(metro_adjacency),
+         metro = as.factor(metro)) 
 
 x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
 y <- heart$heart_disease_mortality_per_100k
@@ -23,8 +27,8 @@ y <- heart$heart_disease_mortality_per_100k
 Set up `caret` training control. 
 
 ```{r}
-set.seed(100)
-ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+set.seed(2)
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 ```
 
 ## Lasso
@@ -32,14 +36,16 @@ ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 Cross validate to find the optimal lambda value.
 
 ```{r}
-set.seed(100)
+set.seed(2)
 
-lasso_fit <- train(x, y,
-                     method = "glmnet",
-                     tuneGrid = expand.grid(alpha = 1, 
-                                            lambda = exp(seq(-10, 0, length = 200))),
-                    preProcess = c("zv"),
-                    trControl = ctrl1)
+lasso_fit <- train(heart_disease_mortality_per_100k ~ ., 
+                   data = heart,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 1,
+                                          lambda = exp(seq(-10, 0, length = 200))),
+                   metric = "RMSE",
+                   #preProcess = c("zv"),
+                   trControl = ctrl)
 
 
 plot(lasso_fit, xTrans = function(x) log(x)) #in correct range
@@ -47,16 +53,16 @@ plot(lasso_fit, xTrans = function(x) log(x)) #in correct range
 best_lambda_lasso = lasso_fit$bestTune$lambda # lower lambda bc adjusted bounds
 
 ##centered, scaled coefficients from caret
-predict(lasso_fit$finalModel, s = best_lambda_lasso, type="coefficients") %>% 
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
   broom::tidy() %>% 
   arrange(desc(abs(value))) %>% 
   top_n(10)
 
-predict(lasso_fit$finalModel, s = best_lambda_lasso, type="coefficients") %>% 
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
   dim()
 
 #saving caret object to rdata
-saveRDS(lasso_fit, "lasso.rds")
+saveRDS(lasso_fit, "lasso_imputed.rds")
 ```
 
 
@@ -68,22 +74,21 @@ library(pdp)
 #library(vip)
 #library(patchwork)
 
-set.seed(100)
-pcr_fit <- train(x,y, 
-  method = "pcr",
-  trControl = ctrl1,
-  metric = "RMSE",
-  tuneLength = 200
-  )
+set.seed(2)
+pcr_fit <- train(heart_disease_mortality_per_100k ~ ., 
+                 data = heart,
+                 method = "pcr",
+                 trControl = ctrl,
+                 metric = "RMSE",
+                 tuneLength = 200)
 
 plot(pcr_fit, xTrans = function(x) log(x)) 
 
-pred_pcr <- predict(pcr_fit, 
-                      ncomp = 35)
+pred_pcr <- predict(pcr_fit, ncomp = 35)
 
 
 #saving caret object to rdata
-saveRDS(pcr_fit, "pcr.rds")
+saveRDS(pcr_fit, "pcr_imputed.rds")
 
 #save(pcr_fit, file = 'pcr.RData')
 #Calculate accuracy with MSE
