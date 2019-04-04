@@ -1,14 +1,33 @@
 ---
-title: "project"
-author: "Laura Cosgrove"
-date: "3/26/2019"
+title: "Predicting County-Level Heart Disease Mortality in the US"
+author: "Charlotte Abrams, Laura Cosgrove, Alyssa Vanderbeek"
+date: "7 April 2019"
 output: github_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+```
+
+
 ## Introduction
 ### Background (Alyssa)
 ### Exploratory Data Analysis (Laura)
 
 ## Linear Models
+
+```{r, echo=FALSE}
+# load the model fits from previous runs
+lm_fit <- readRDS("lm_step_imputed.rds")
+ridge_fit <- readRDS("ridge.rds")
+mars_fit <- readRDS("mars.rds")
+gam_fit <- readRDS("gam_fit_imputed.rds")
+lasso_fit <- readRDS("lasso_imputed.rds")
+pcr_fit <- readRDS("pcr_imputed.rds")
+```
+
 
 ### Stepwise Selection (Alyssa)
 
@@ -28,34 +47,24 @@ Note that we chose the most parsimonious model.
 
 ## Classification Setting?
 
-### KNN?
 
-## Conclusions 
+## Model Comparison 
 
 ### Training RMSE
 
-```{r}
-set.seed(100)
-library(tidyverse)
-library(caret)
-
-lm_fit <- readRDS("lm_step_imputed.rds")
-ridge_fit <- readRDS("ridge.rds")
-mars_fit <- readRDS("mars.rds")
-gam_fit <- readRDS("gam_fit_imputed.rds")
-lasso_fit <- readRDS("lasso.rds")
-pcr_fit <- readRDS("pcr.rds")
-
+```{r, echo=FALSE}
+set.seed(2)
+# resample each model to compare 
 res <- resamples(list(
   Stepwise = lm_fit,
   Ridge = ridge_fit,
   Lasso = lasso_fit,
   PCR = pcr_fit,
-  GAM = gam_fit
+  GAM = gam_fit,
   MARS = mars_fit
   ))
 
-
+# plot RMSE ad CI for each model to compare predictive ability
 ggplot(res, metric = "RMSE") +
   theme_minimal() +
   labs(title = "Resampled Training RMSE")
@@ -66,11 +75,13 @@ The more flexible model
 ### Test RMSE (Alyssa)
 
 **note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret?
+-- done
 
 can consider imputation: say 10%, one possible solution. use the training set to build. Look at the preProcess function, can use knn. 
+-- done. Still dropped two columns because they had 90\% missing data; imputation not reliable
 
 Check/detect near-zero variance predictors: to decrease computational time and complexity.
-
+-- done. A few of the categories for urban influence came back as having near-zero variance. These were examined as dummy variables; 2000 rows divided across 12 levels means that these are likely to be "rare". We determined that we ought to leave them in the model since they are part of the larger variable "urban_influence".
 
 
 ### Interpretations (Laura)
@@ -84,7 +95,11 @@ The minimum generalized cross-validation error was achieved
 _Investigation of GAM_
 
 
+## Discussion
 
+
+
+\pagebreak
 ## Appendix
 
 ### Data prep
@@ -176,7 +191,7 @@ test_imputed = predict(training_preproc, test)
 *Linear Models*
 
 Stepwise regression:
-```{r}
+```{r, eval=F}
 ctrl = trainControl(method = "repeatedcv", number = 10, repeats = 5)
 set.seed(2)
 step.fit = caret::train(heart_disease_mortality_per_100k ~ ., 
@@ -203,6 +218,12 @@ lasso_fit <- caret::train(heart_disease_mortality_per_100k ~ .,
 
 Ridge:
 ```{r, eval=F}
+
+```
+
+
+PCR:
+```{r, eval=F}
 set.seed(2)
 pcr_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
                         data = heart,
@@ -210,12 +231,6 @@ pcr_fit <- caret::train(heart_disease_mortality_per_100k ~ .,
                         trControl = ctrl,
                         metric = "RMSE",
                         tuneLength = 200)
-```
-
-
-PCR:
-```{r, eval=F}
-
 ```
 
 
