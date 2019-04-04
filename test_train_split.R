@@ -13,14 +13,14 @@ data <- response %>%
   rename(urban_influence = area__urban_influence,
          economic_typology = econ__economic_typology) %>%
   mutate(pure_population = fct_collapse(as.factor(population), 
-                                        "more than 1,000,000" = "Counties in metro areas of 1 million population or more",
-                                        "250,000 - 1,000,000" = "Counties in metro areas of 250,000 to 1 million population",
-                                        "less than 250,000" = "Counties in metro areas of fewer than 250,000 population",
-                                        "more than 20,000" = c("Urban population of 20,000 or more, adjacent to a metro area", 
+                                        "more_than_1mil" = "Counties in metro areas of 1 million population or more",
+                                        "250k_to_1mil" = "Counties in metro areas of 250,000 to 1 million population",
+                                        "less_than_250k" = "Counties in metro areas of fewer than 250,000 population",
+                                        "more_than_20k" = c("Urban population of 20,000 or more, adjacent to a metro area", 
                                                                "Urban population of 20,000 or more, not adjacent to a metro area"),
-                                        "2,500 - 20,000" = c("Urban population of 2,500 to 19,999, adjacent to a metro area", 
+                                        "2500_to_20k" = c("Urban population of 2,500 to 19,999, adjacent to a metro area", 
                                                              "Urban population of 2,500 to 19,999, not adjacent to a metro area"),
-                                        "0 - 2,500" = c("Completely rural or less than 2,500 urban population, adjacent to a metro area", 
+                                        "less_than_2500" = c("Completely rural or less than 2,500 urban population, adjacent to a metro area", 
                                                         "Completely rural or less than 2,500 urban population, not adjacent to a metro area")),
          economic_typology = as.factor(recode(economic_typology,
                                               "Nonspecialized" = "Nonspecialized",
@@ -31,7 +31,8 @@ data <- response %>%
                                               "Recreation" = "Recreation")),
         metro = factor(metro, 
                        levels = c("Metro", "Nonmetro")),
-        urban_influence = as.factor(urban_influence),
+        urban_influence = str_replace_all(urban_influence, " |/|-", "_"), # replace problematic characters
+        urban_influence = str_replace_all(urban_influence, ",", ""), # replace problematic characters
         demo__pct_nonwhite = demo__pct_hispanic + demo__pct_asian + demo__pct_american_indian_or_alaskan_native + demo__pct_non_hispanic_african_american,
         urban_influence = fct_rev(urban_influence),
         metro_adjacency = fct_collapse(population, 
@@ -52,7 +53,7 @@ data <- response %>%
                 -health__homicides_per_100k, # >90% missing
                 -health__pct_excessive_drinking, # >90% missing
                 -yr,
-                -population)
+                -population) 
 
 
 ## training/test data
