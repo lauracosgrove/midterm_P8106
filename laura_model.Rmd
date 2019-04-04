@@ -138,6 +138,27 @@ mars_fit$finalModel$gcv #metric earth uses to choose
 
 #saving caret object to rdata
 saveRDS(mars_fit, "mars.rds")
+
+mars_grid_refined <- expand.grid(degree = 2, 
+                         nprune = 25:30) #degree: 1 vs 2 vs 3, no interaction vs. interaction;
+#nprune is number of coef
+
+set.seed(2)
+mars_fit_refined <- train(x, y,
+                 method = "earth",
+                 tuneGrid = mars_grid_refined,
+                 trControl = ctrl1)
+
+ggplot(mars_fit_refined)
+
+mars_fit_refined$bestTune
+summary(mars_fit_refined$finalModel)
+
+mars_fit_refined$finalModel$gcv #metric earth uses to choose
+
+#saving caret object to rdata
+saveRDS(mars_fit_refined, "mars2.rds")
+
 ```
 
 To better understand the relationship between these features and `heart_disease_mortality_per_100k`, we can create partial dependence plots (PDPs) for each feature individually and also an interaction PDP. This is used to examine the marginal effects of predictors.
@@ -146,18 +167,18 @@ A nice way to visualize especially these black box models. We see that the model
 
 ```{r}
 #Variable importance
-vip::vip(mars_fit, num_features = 40, bar = FALSE, value = "gcv") + ggtitle("GCV")
-vip::vip(mars_fit, num_features = 40, bar = FALSE, value = "rss") + ggtitle("RSS")
+vip::vip(mars_fit_refined, num_features = 55, bar = FALSE, value = "gcv") + ggtitle("GCV")
+vip::vip(mars_fit_refined, num_features = 55, bar = FALSE, value = "rss") + ggtitle("RSS")
 
 #Final coefficients: interactions
-coef(mars_fit$finalModel) %>%
+coef(mars_fit_refined$finalModel) %>%
   broom::tidy() %>% 
   knitr::kable()
 
 #Partial feature plots
 p1 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity"), grid.resolution = 10) %>% autoplot()
-p2 <- pdp::partial(mars_fit, pred.var = c("demo__pct_adults_less_than_a_high_school_diploma"), grid.resolution = 10) %>% autoplot()
-p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__pct_adults_less_than_a_high_school_diploma"), grid.resolution = 10) %>%  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
+p2 <- pdp::partial(mars_fit, pred.var = c("demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>% autoplot()
+p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>%  plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
 
 gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
 ```
