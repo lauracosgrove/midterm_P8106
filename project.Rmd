@@ -14,11 +14,22 @@ library(caret)
 
 ## Introduction
 ### Background (Alyssa)
+
+Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
+
+
 ### Exploratory Data Analysis (Laura)
 
 ## Linear Models
 
 ```{r, echo=FALSE}
+test = readr::read_csv("data/test_imputed.csv") %>% 
+  mutate(pure_population = as.factor(pure_population),
+         urban_influence = as.factor(urban_influence),
+         economic_typology = as.factor(economic_typology),
+         metro_adjacency = as.factor(metro_adjacency),
+         metro = as.factor(metro))
+
 # load the model fits from previous runs
 lm_fit <- readRDS("lm_step_imputed.rds")
 ridge_fit <- readRDS("ridge.rds")
@@ -31,11 +42,15 @@ pcr_fit <- readRDS("pcr_imputed.rds")
 
 ### Stepwise Selection (Alyssa)
 
+We first fit a stepwise linear regression model. 
+
 ### Lasso (Charlotte)
 
 ### Ridge (Laura)
 
 ### PCR (Charlotte)
+
+
 
 ## Nonlinear Models
 
@@ -45,14 +60,13 @@ pcr_fit <- readRDS("pcr_imputed.rds")
 
 Note that we chose the most parsimonious model.
 
-## Classification Setting?
 
 
 ## Model Comparison 
 
 ### Training RMSE
 
-```{r}
+```{r, echo = FALSE}
 set.seed(100)
 library(tidyverse)
 library(caret)
@@ -64,7 +78,6 @@ mars2_fit <- readRDS("mars2.rds")
 gam_fit <- readRDS("gam_fit_imputed.rds")
 lasso_fit <- readRDS("lasso.rds")
 pcr_fit <- readRDS("pcr.rds")
-
 # resample each model to compare 
 res <- resamples(list(
   Stepwise = lm_fit,
@@ -196,6 +209,9 @@ training_preproc = caret::preProcess(train,
 # Impute training imputation on both training and testing datasets
 train_imputed = predict(training_preproc, train)
 test_imputed = predict(training_preproc, test)
+
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+y <- heart$heart_disease_mortality_per_100k
 ```
 
 
@@ -205,8 +221,7 @@ Stepwise regression:
 ```{r, eval=F}
 ctrl = trainControl(method = "repeatedcv", number = 10, repeats = 5)
 set.seed(2)
-step.fit = caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = train_imputed, 
+step.fit = caret::train(x, y, 
                         method = 'glmStepAIC',
                         metric = "RMSE",
                         trControl = ctrl)
@@ -216,8 +231,7 @@ step.fit = caret::train(heart_disease_mortality_per_100k ~ .,
 Lasso:
 ```{r, eval=F}
 set.seed(2)
-lasso_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                          data = heart,
+lasso_fit <- caret::train(x, y,
                           method = "glmnet",
                           metric = "RMSE",
                           tuneGrid = expand.grid(alpha = 1,
@@ -236,8 +250,7 @@ Ridge:
 PCR:
 ```{r, eval=F}
 set.seed(2)
-pcr_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = heart,
+pcr_fit <- caret::train(x, y,
                         method = "pcr",
                         trControl = ctrl,
                         metric = "RMSE",
@@ -252,8 +265,7 @@ pcr_fit <- caret::train(heart_disease_mortality_per_100k ~ .,
 GAM:
 ```{r, eval=F}
 set.seed(2)
-gam.fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = train_imputed,
+gam.fit <- caret::train(x, y,
                         method = "gam",
                         metric = 'RMSE',
                         tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
@@ -278,23 +290,36 @@ saveRDS(gam_fit, "gam_fit_imputed.rds")
 
 MARS:
 ```{r, eval=F}
-mars_grid <- expand.grid(degree = 1:3, 
-                         nprune = 24:40) #degree: 1 vs 2 vs 3, no interaction vs. interaction;
-#nprune is number of coef
+mars_grid <- expand.grid(degree = 1:3, # degree: 1 vs 2 vs 3, no interaction vs. interaction;
+                         nprune = 24:40) # nprune is number of coef
 
 set.seed(2)
+<<<<<<< HEAD
 mars_fit <- train(x, y,
                  method = "earth",
                  tuneGrid = mars_grid,
                  trControl = ctrl)
+=======
+mars_fit <- caret::train(x, y,
+                         method = "earth",
+                         tuneGrid = mars_grid,
+                         trControl = ctrl)
+
+>>>>>>> 4242a3a872be7d73bbadcbc41d73a639a65383a0
 #based on initial results, choose parsimonious version
-mars_grid_refined <- expand.grid(degree = 2, 
-                         nprune = 25:30) 
+mars_grid_refined <- expand.grid(degree = 2, nprune = 25:30) 
 
 set.seed(2)
+<<<<<<< HEAD
 mars_fit_refined <- train(x, y,
                  method = "earth",
                  tuneGrid = mars_grid_refined,
                  trControl = ctrl)
+=======
+mars_fit_refined <- caret::train(x, y,
+                                 method = "earth",
+                                 tuneGrid = mars_grid_refined,
+                                 trControl = ctrl)
+>>>>>>> 4242a3a872be7d73bbadcbc41d73a639a65383a0
 ```
 
