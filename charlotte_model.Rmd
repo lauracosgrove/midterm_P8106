@@ -38,7 +38,6 @@ lasso_fit <- train(x, y,
                      method = "glmnet",
                      tuneGrid = expand.grid(alpha = 1, 
                                             lambda = exp(seq(-4, 4, length = 200))),
-                    preProc = c("center", "scale"),
                     trControl = ctrl1)
 
 
@@ -71,7 +70,6 @@ pcr_fit <- train(x,y,
   method = "pcr",
   trControl = ctrl1,
   metric = "RMSE",
-  preProcess = c("zv", "center", "scale"),
   tuneLength = 20
   )
 
