@@ -210,8 +210,8 @@ training_preproc = caret::preProcess(train,
 train_imputed = predict(training_preproc, train)
 test_imputed = predict(training_preproc, test)
 
-x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
-y <- heart$heart_disease_mortality_per_100k
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = train_imputed)[,-1]
+y <- train_imputed$heart_disease_mortality_per_100k
 ```
 
 
@@ -297,5 +297,22 @@ mars_fit_refined <- caret::train(x, y,
                                  method = "earth",
                                  tuneGrid = mars_grid_refined,
                                  trControl = ctrl)
+```
+
+
+```{r}
+new_x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = test_imputed)[,-1]
+new_y <- test_imputed$heart_disease_mortality_per_100k
+
+new_x2 <- test_imputed %>% select(-heart_disease_mortality_per_100k)
+
+models <- list(gam = gam_fit, 
+               ridge = ridge_fit)
+glimpse(x)
+glimpse(new_x)
+
+new_x[1,]
+x[1,]
+extractPrediction(models, testX = new_x, testY = new_y)
 ```
 
