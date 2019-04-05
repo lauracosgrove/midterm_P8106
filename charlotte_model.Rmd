@@ -38,8 +38,7 @@ Cross validate to find the optimal lambda value.
 ```{r}
 set.seed(2)
 
-lasso_fit <- train(heart_disease_mortality_per_100k ~ ., 
-                   data = heart,
+lasso_fit <- train(x, y,
                    method = "glmnet",
                    tuneGrid = expand.grid(alpha = 1,
                                           lambda = exp(seq(-10, 0, length = 200))),
@@ -75,8 +74,7 @@ library(pdp)
 #library(patchwork)
 
 set.seed(2)
-pcr_fit <- train(heart_disease_mortality_per_100k ~ ., 
-                 data = heart,
+pcr_fit <- train(x, y,
                  method = "pcr",
                  trControl = ctrl,
                  metric = "RMSE",

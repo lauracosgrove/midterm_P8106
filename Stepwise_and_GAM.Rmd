@@ -36,19 +36,19 @@ test = readr::read_csv("data/test_imputed.csv") %>%
          economic_typology = as.factor(economic_typology),
          metro_adjacency = as.factor(metro_adjacency),
          metro = as.factor(metro))
+test2 = as.data.frame(model.matrix(heart_disease_mortality_per_100k ~ ., data = test))
 
 ```
 
 Stepwise model 
 
 ```{r}
-# x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
-# y <- heart$heart_disease_mortality_per_100k
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+y <- heart$heart_disease_mortality_per_100k
 
 # Stepwise model selection
 set.seed(2)
-step.fit = caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = heart, 
+step.fit = caret::train(x, y, 
                         method = 'glmStepAIC',
                         metric = 'RMSE',
                         trControl = trainControl(method = "repeatedcv", number = 10, repeats = 5))
@@ -56,16 +56,16 @@ summary(step.fit)
 
 
 ## predict on test data
-# pred.step = predict.lm(step.fit, newdata = test)
-# mean((pred.step - test$heart_disease_mortality_per_100k)^2) # MSE
+pred.step = predict(step.fit, newdata = test2)
+mean((pred.step - test$heart_disease_mortality_per_100k)) # RMSE
 ```
+
 
 GAM
 
 ```{r}
 set.seed(2)
-gam.fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = heart,
+gam.fit <- caret::train(x, y,
                         method = "gam",
                         metric = 'RMSE',
                         tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
@@ -76,8 +76,8 @@ gam.fit$finalModel
 
 ## Predict on test data
 
-pred.gam = mgcv::predict.gam(gam.fit, newdata = test)
-mean((pred.gam - test$heart_disease_mortality_per_100k)^2) # MSE
+#pred.gam = predict(gam_fit, newdata = test2)
+#mean((pred.gam - test$heart_disease_mortality_per_100k)) # RMSE
 ```
 
 

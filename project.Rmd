@@ -1,24 +1,36 @@
 ---
-title: "Predicting County-Level Heart Disease Mortality in the US"
+title: "Predicting County-Level Heart Disease Mortality in the United States"
 author: "Charlotte Abrams, Laura Cosgrove, Alyssa Vanderbeek"
 date: "7 April 2019"
-output: github_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
+library(earth)
 ```
 
 
 ## Introduction
-### Background (Alyssa)
+### Background
 
 Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
 
 
 ### Exploratory Data Analysis (Laura)
+
+## Data Methods
+
+**note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret?
+-- done
+
+can consider imputation: say 10%, one possible solution. use the training set to build. Look at the preProcess function, can use knn. 
+-- done. Still dropped two columns because they had 90\% missing data; imputation not reliable
+
+Check/detect near-zero variance predictors: to decrease computational time and complexity.
+-- done. A few of the categories for urban influence came back as having near-zero variance. These were examined as dummy variables; 2000 rows divided across 12 levels means that these are likely to be "rare". We determined that we ought to leave them in the model since they are part of the larger variable "urban_influence".
 
 ## Linear Models
 
@@ -29,6 +41,8 @@ test = readr::read_csv("data/test_imputed.csv") %>%
          economic_typology = as.factor(economic_typology),
          metro_adjacency = as.factor(metro_adjacency),
          metro = as.factor(metro))
+test_outcome = test$heart_disease_mortality_per_100k
+test = as.data.frame(model.matrix(heart_disease_mortality_per_100k ~ ., data = test))
 
 # load the model fits from previous runs
 lm_fit <- readRDS("lm_step_imputed.rds")
@@ -67,17 +81,8 @@ Note that we chose the most parsimonious model.
 ### Training RMSE
 
 ```{r, echo = FALSE}
-set.seed(100)
-library(tidyverse)
-library(caret)
+set.seed(2)
 
-lm_fit <- readRDS("lm_step_imputed.rds")
-ridge_fit <- readRDS("ridge.rds")
-mars_fit <- readRDS("mars.rds")
-mars2_fit <- readRDS("mars2.rds")
-gam_fit <- readRDS("gam_fit_imputed.rds")
-lasso_fit <- readRDS("lasso.rds")
-pcr_fit <- readRDS("pcr.rds")
 # resample each model to compare 
 res <- resamples(list(
   Stepwise = lm_fit,
@@ -85,7 +90,7 @@ res <- resamples(list(
   Lasso = lasso_fit,
   PCR = pcr_fit,
   GAM = gam_fit,
-  MARS = mars2_fit
+  MARS = mars_fit
   ))
 
 # plot RMSE ad CI for each model to compare predictive ability
@@ -98,14 +103,30 @@ The more flexible model
 
 ### Test RMSE (Alyssa)
 
-**note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret?
--- done
+```{r, echo = FALSE}
+pred_lm = predict(lm_fit, newdata = test)
+pred_ridge = predict(ridge_fit, test)
+pred_lasso = predict(lasso_fit, test)
+pred_pcr = predict(pcr_fit, test)
+pred_gam = predict(gam_fit, test)
+pred_mars = predict(mars_fit, test)
 
-can consider imputation: say 10%, one possible solution. use the training set to build. Look at the preProcess function, can use knn. 
--- done. Still dropped two columns because they had 90\% missing data; imputation not reliable
+data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
+           test_rmse = c(sqrt(mean((pred_lm - test_outcome)^2)),
+                         sqrt(mean((pred_ridge - test_outcome)^2)),
+                         sqrt(mean((pred_lasso - test_outcome)^2)),
+                         sqrt(mean((pred_pcr - test_outcome)^2)),
+                         sqrt(mean((pred_gam - test_outcome)^2)),
+                         sqrt(mean((pred_mars - test_outcome)^2)))) %>%
+  `colnames<-`(c("Train RMSE", "Test RMSE")) %>%
+  knitr::kable(caption = "Predictive RMSE on training and test data")
+```
 
-Check/detect near-zero variance predictors: to decrease computational time and complexity.
--- done. A few of the categories for urban influence came back as having near-zero variance. These were examined as dummy variables; 2000 rows divided across 12 levels means that these are likely to be "rare". We determined that we ought to leave them in the model since they are part of the larger variable "urban_influence".
+
+Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Although GAM appeared to have the lowest RMSE when using the training data, MARS has a slight advantage (a difference of 0.003) on the test data. 
+
+
+
 
 
 ### Interpretations (Laura)

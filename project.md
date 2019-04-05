@@ -8,12 +8,37 @@ Introduction
 
 ### Background (Alyssa)
 
+Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
+
 ### Exploratory Data Analysis (Laura)
+
+Data Methods
+------------
+
+\*\*note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret? -- done
+
+can consider imputation: say 10%, one possible solution. use the training set to build. Look at the preProcess function, can use knn. -- done. Still dropped two columns because they had 90% missing data; imputation not reliable
+
+Check/detect near-zero variance predictors: to decrease computational time and complexity. -- done. A few of the categories for urban influence came back as having near-zero variance. These were examined as dummy variables; 2000 rows divided across 12 levels means that these are likely to be "rare". We determined that we ought to leave them in the model since they are part of the larger variable "urban\_influence".
 
 Linear Models
 -------------
 
+    ## Parsed with column specification:
+    ## cols(
+    ##   .default = col_double(),
+    ##   metro = col_character(),
+    ##   urban_influence = col_character(),
+    ##   economic_typology = col_character(),
+    ##   pure_population = col_character(),
+    ##   metro_adjacency = col_character()
+    ## )
+
+    ## See spec(...) for full column specifications.
+
 ### Stepwise Selection (Alyssa)
+
+We first fit a stepwise linear regression model.
 
 ### Lasso (Charlotte)
 
@@ -30,9 +55,6 @@ Nonlinear Models
 
 Note that we chose the most parsimonious model.
 
-Classification Setting?
------------------------
-
 Model Comparison
 ----------------
 
@@ -44,11 +66,16 @@ The more flexible model
 
 ### Test RMSE (Alyssa)
 
-\*\*note: transform test data by centering and scaling with TRAINING means and standard deviations. Does predict do this automatically when using `preProcess` in caret? -- done
+|          |  Train RMSE|  Test RMSE|
+|----------|-----------:|----------:|
+| Stepwise |   0.5695231|  0.5774001|
+| Ridge    |   0.5676237|  0.5799894|
+| Lasso    |   0.5668887|  0.5772404|
+| PCR      |   0.5669038|  0.5777914|
+| GAM      |   0.5492921|  0.5493805|
+| MARS     |   0.5681207|  0.5469220|
 
-can consider imputation: say 10%, one possible solution. use the training set to build. Look at the preProcess function, can use knn. -- done. Still dropped two columns because they had 90% missing data; imputation not reliable
-
-Check/detect near-zero variance predictors: to decrease computational time and complexity. -- done. A few of the categories for urban influence came back as having near-zero variance. These were examined as dummy variables; 2000 rows divided across 12 levels means that these are likely to be "rare". We determined that we ought to leave them in the model since they are part of the larger variable "urban\_influence".
+Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Although GAM appeared to have the lowest RMSE when using the training data, MARS has a slight advantage (a difference of 0.003) on the test data.
 
 ### Interpretations (Laura)
 
@@ -63,7 +90,8 @@ The minimum generalized cross-validation error was achieved
 Discussion
 ----------
 
-\#\# Appendix
+Appendix
+--------
 
 ### Data prep
 
@@ -147,6 +175,9 @@ training_preproc = caret::preProcess(train,
 # Impute training imputation on both training and testing datasets
 train_imputed = predict(training_preproc, train)
 test_imputed = predict(training_preproc, test)
+
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = heart)[,-1]
+y <- heart$heart_disease_mortality_per_100k
 ```
 
 *Linear Models*
@@ -156,8 +187,7 @@ Stepwise regression:
 ``` r
 ctrl = trainControl(method = "repeatedcv", number = 10, repeats = 5)
 set.seed(2)
-step.fit = caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = train_imputed, 
+step.fit = caret::train(x, y, 
                         method = 'glmStepAIC',
                         metric = "RMSE",
                         trControl = ctrl)
@@ -167,8 +197,7 @@ Lasso:
 
 ``` r
 set.seed(2)
-lasso_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                          data = heart,
+lasso_fit <- caret::train(x, y,
                           method = "glmnet",
                           metric = "RMSE",
                           tuneGrid = expand.grid(alpha = 1,
@@ -183,8 +212,7 @@ PCR:
 
 ``` r
 set.seed(2)
-pcr_fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = heart,
+pcr_fit <- caret::train(x, y,
                         method = "pcr",
                         trControl = ctrl,
                         metric = "RMSE",
@@ -197,12 +225,35 @@ GAM:
 
 ``` r
 set.seed(2)
-gam.fit <- caret::train(heart_disease_mortality_per_100k ~ ., 
-                        data = train_imputed,
+gam_fit <- caret::train(x, y, 
                         method = "gam",
                         metric = 'RMSE',
                         tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
                         trControl = ctrl)
+summary(gam_fit)
+saveRDS(gam_fit, "gam_fit_imputed.rds")
 ```
 
 MARS:
+
+``` r
+mars_grid <- expand.grid(degree = 1:3, # degree: 1 vs 2 vs 3, no interaction vs. interaction;
+                         nprune = 24:40) # nprune is number of coef
+
+set.seed(2)
+
+mars_fit <- caret::train(x, y,
+                         method = "earth",
+                         tuneGrid = mars_grid,
+                         trControl = ctrl)
+
+#based on initial results, choose parsimonious version
+mars_grid_refined <- expand.grid(degree = 2, nprune = 25:30) 
+
+set.seed(2)
+
+mars_fit_refined <- caret::train(x, y,
+                                 method = "earth",
+                                 tuneGrid = mars_grid_refined,
+                                 trControl = ctrl)
+```
