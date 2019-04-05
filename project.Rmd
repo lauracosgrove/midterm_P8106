@@ -279,7 +279,7 @@ data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
 ```
 
 
-Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Although GAM appeared to have the lowest RMSE when using the training data, MARS has similar performance with GAM in the test data. 
+Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Although GAM appeared to have the lowest RMSE when using the training data, MARS has similar performance to the GAM model in the test data. 
 
 
 ### Interpretations (Laura)
@@ -430,8 +430,15 @@ plot(gam_fit$finalModel, shade = TRUE, shade.col = "#add8e6")
 
 
 ## Discussion
+```{r include = FALSE}
+cv_RMSE <- summary(res)$statistics$RMSE
+gam_RMSE <- summary(res)$statistics$RMSE[5,]
+```
 
 
+GAM was our best-performing model. With GAM, we were able to achieve a cross-validated RMSE of median `r paste(round(gam_RMSE[3], 2))` and bootstrapped interquartile range of (`r paste(round(gam_RMSE[2], 2))`, `r paste(round(gam_RMSE[5], 2))`. GAM, and MARS, also performed well on the test data
+
+However, simpler and more interpretable linear models were close in performance to the more flexible models.
 
 \pagebreak
 ## Appendix
