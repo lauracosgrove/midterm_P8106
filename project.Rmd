@@ -67,17 +67,8 @@ Note that we chose the most parsimonious model.
 ### Training RMSE
 
 ```{r, echo = FALSE}
-set.seed(100)
-library(tidyverse)
-library(caret)
+set.seed(2)
 
-lm_fit <- readRDS("lm_step_imputed.rds")
-ridge_fit <- readRDS("ridge.rds")
-mars_fit <- readRDS("mars.rds")
-mars2_fit <- readRDS("mars2.rds")
-gam_fit <- readRDS("gam_fit_imputed.rds")
-lasso_fit <- readRDS("lasso.rds")
-pcr_fit <- readRDS("pcr.rds")
 # resample each model to compare 
 res <- resamples(list(
   Stepwise = lm_fit,
@@ -85,7 +76,7 @@ res <- resamples(list(
   Lasso = lasso_fit,
   PCR = pcr_fit,
   GAM = gam_fit,
-  MARS = mars2_fit
+  MARS = mars_fit
   ))
 
 # plot RMSE ad CI for each model to compare predictive ability
