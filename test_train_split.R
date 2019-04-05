@@ -56,7 +56,6 @@ data <- response %>%
                 -population,
                 -row_id) 
 
-
 ## training/test data
 set.seed(1)
 train_ind <- sample(seq_len(nrow(data)), size = 2/3*nrow(data)) # select rows in 2:1 ratio 
@@ -81,6 +80,7 @@ train_imputed = predict(training_preproc, train)
 test_imputed = predict(training_preproc, test)
 
 #save files to Rdata: was not saving the factor structure
+saveRDS(data, "./data/full_processed_data.Rdata")
 saveRDS(train_imputed, file = './data/train_imputed.Rdata')
 saveRDS(train_imputed, file = './data/test_imputed.Rdata')
 
