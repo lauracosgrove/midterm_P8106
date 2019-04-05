@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
 library(earth)
+library(patchwork)
 ```
 
 
@@ -20,6 +21,8 @@ Heart disease remains one of the leading causes of death in adults in the US. Un
 
 
 ### Exploratory Data Analysis (Laura)
+
+
 
 ## Data Methods
 
@@ -35,19 +38,18 @@ Check/detect near-zero variance predictors: to decrease computational time and c
 ## Linear Models
 
 ```{r, echo=FALSE}
-test = readr::read_csv("data/test_imputed.csv") %>% 
-  mutate(pure_population = as.factor(pure_population),
-         urban_influence = as.factor(urban_influence),
-         economic_typology = as.factor(economic_typology),
-         metro_adjacency = as.factor(metro_adjacency),
-         metro = as.factor(metro))
+train <- read_rds("./data/train_imputed.Rdata") 
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = train)[,-1]
+y <- train$heart_disease_mortality_per_100k
+
+test = readr::read_rds("data/test_imputed.Rdata")
 test_outcome = test$heart_disease_mortality_per_100k
-test = as.data.frame(model.matrix(heart_disease_mortality_per_100k ~ ., data = test))
+test = model.matrix(heart_disease_mortality_per_100k ~ ., data = test)
 
 # load the model fits from previous runs
 lm_fit <- readRDS("lm_step_imputed.rds")
 ridge_fit <- readRDS("ridge.rds")
-mars_fit <- readRDS("mars.rds")
+mars_fit <- readRDS("mars2.rds")
 gam_fit <- readRDS("gam_fit_imputed.rds")
 lasso_fit <- readRDS("lasso_imputed.rds")
 pcr_fit <- readRDS("pcr_imputed.rds")
@@ -123,19 +125,110 @@ data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
 ```
 
 
-Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Although GAM appeared to have the lowest RMSE when using the training data, MARS has a slight advantage (a difference of 0.003) on the test data. 
-
-
-
+Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Although GAM appeared to have the lowest RMSE when using the training data, MARS has similar performance with GAM in the test data. 
 
 
 ### Interpretations (Laura)
 
 _Coefficient Shrinkage: Lasso and Ridge_
 
+```{r, echo = FALSE, warning = FALSE}
+
+##Coefficient Shrinkage
+
+### Ridge 
+best_lambda_ridge = ridge_fit$bestTune$lambda 
+
+ridge_cv_glmnet <- glmnet::cv.glmnet(x, y, 
+                      alpha = 0, 
+                      lambda = exp(seq(-2, 10, length = 200)), 
+                      type.measure = "mse")
+
+### Lasso 
+best_lambda_lasso = lasso_fit$bestTune$lambda 
+
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
+  dim() #no shrinkage
+
+lasso_cv_glmnet <- glmnet::cv.glmnet(x, y, 
+                      alpha = 1, 
+                      lambda = exp(seq(-2, 4, length = 200)), 
+                      type.measure = "mse")
+
+plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
+abline(v = log(best_lambda_ridge), col = "blue") + title(sub="CV-selected lambda in blue", xlab="Ridge")
+
+plotmo::plot_glmnet(lasso_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
+abline(v = log(best_lambda_lasso), col = "blue") + title(sub="CV-selected lambda in blue", xlab = "Lasso")
+#could suggest selection of a more parsimonious model: lambda = exp(0)
+
+#### Some of the most "important" coefficients
+predict(ridge_fit$finalModel, s = best_lambda_ridge, type ="coefficients") %>% 
+  broom::tidy() %>% 
+  arrange(desc(abs(value))) %>% 
+  top_n(10) %>% 
+  knitr::kable(format = "latex", caption = "Top Absolute-Values Coefficients, Ridge")
+
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type ="coefficients") %>% 
+  broom::tidy() %>% 
+  arrange(desc(abs(value))) %>% 
+  top_n(10) %>% 
+  knitr::kable(format = "latex", caption = "Top Absolute-Valued Coefficients, Lasso")
+```
+
+For better visualization, a `glmnet` model was fit and the lambda value selected by `caret` was plotted. 
+
+Overall, this modeling problem was perhaps not the best fit for lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot, where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve MSE for this problem.
+
+If lasso and ridge were more appropriate for the problem, parameter selection might have been more obvious. As it is, as shown below, the standard error of the mean cross-validated error is quite wide.
+
+```{r, echo = FALSE}
+##MSE 
+###Ridge
+ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
+
+ridge_cv_table_best <- ridge_cv_table %>% 
+  arrange(mse) %>% 
+  slice(which.min(abs(lambda_values - best_lambda_ridge)))
+
+ridge_mse_plot <- ridge_cv_table %>% 
+  filter(lambda_values %in% exp(seq(-2, 5, length = 200))) %>% 
+  ggplot(aes(x = log(lambda_values), y = mse)) +
+  geom_point() +
+  geom_point(aes(x = log(best_lambda_ridge), y = ridge_cv_table_best$mse), color = "red") +
+  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3) + 
+  labs(title = "Ridge Parameter Selection") +
+  annotate("text", x = 0.5 + log(best_lambda_ridge), y = 1.05*ridge_cv_table_best$mse, label = "Lambda chosen by caret", color = "red") + 
+  theme_minimal()
+
+###Lasso
+lasso_cv_table <- tibble(lambda_values = lasso_cv_glmnet$lambda, mse = lasso_cv_glmnet$cvm, mse_upper = lasso_cv_glmnet$cvup, mse_lower = lasso_cv_glmnet$cvlo)
+
+lasso_cv_table_best <- lasso_cv_table %>% 
+  arrange(mse) %>% 
+  slice(which.min(abs(lambda_values - best_lambda_lasso)))
+
+lasso_mse_plot <- lasso_cv_table %>% 
+  filter(lambda_values %in% exp(seq(-2, 0, length = 200))) %>% 
+  ggplot(aes(x = log(lambda_values), y = mse)) +
+  geom_point() +
+  geom_point(aes(x = log(best_lambda_lasso), y = lasso_cv_table_best$mse), color = "red") +
+  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3) +
+  labs(title = "Lasso Parameter Selection") + 
+  theme_minimal()
+library(patchwork)
+
+ridge_mse_plot + lasso_mse_plot
+```
+
 _Investigation of MARS_
 
-The minimum generalized cross-validation error was achieved
+The minimum generalized cross-validation error was achieved for 
+
+```{r}
+
+```
+
 
 _Investigation of GAM_
 
@@ -150,6 +243,7 @@ _Investigation of GAM_
 ### Data prep
 
 ```{r, eval=F}
+## Data import
 predictors <- read_csv("./data/Training_values.csv") 
 response <- read_csv("./data/Training_labels.csv") 
 
@@ -201,7 +295,10 @@ data <- response %>%
                 -health__homicides_per_100k, # >90% missing
                 -health__pct_excessive_drinking, # >90% missing
                 -yr,
-                -population) 
+                -population,
+                -row_id) 
+
+
 ```
 
 
@@ -216,7 +313,7 @@ train <- data[train_ind, ] # training dataset
 test <- data[-train_ind, ] # testing dataset
 
 # Imputation for missing values with caret, based on training data
-training_preproc = caret::preProcess(train, 
+training_preproc = caret::preProcess(train[,-1], 
                                      method = "knnImpute", # automatically centers and scales data
                                      pcaComp = 10,
                                      na.remove = TRUE,
@@ -231,21 +328,31 @@ training_preproc = caret::preProcess(train,
 train_imputed = predict(training_preproc, train)
 test_imputed = predict(training_preproc, test)
 
-x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = train_imputed)[,-1]
-y <- train_imputed$heart_disease_mortality_per_100k
+#save files to Rdata: was not saving the factor structure in read from csv
+saveRDS(train_imputed, file = './data/train_imputed.Rdata')
+saveRDS(train_imputed, file = './data/test_imputed.Rdata')
+
 ```
 
 
 *Linear Models*
 
+Set up `caret` training control. We will use this for all models.
+
+```{r}
+set.seed(100)
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+```
+
+
 Stepwise regression:
 ```{r, eval=F}
-ctrl = trainControl(method = "repeatedcv", number = 10, repeats = 5)
 set.seed(2)
 step.fit = caret::train(x, y, 
                         method = 'glmStepAIC',
                         metric = "RMSE",
                         trControl = ctrl)
+saveRDS(step.fit, "lm_step_imputed.rds")
 ```
 
 
@@ -256,15 +363,30 @@ lasso_fit <- caret::train(x, y,
                           method = "glmnet",
                           metric = "RMSE",
                           tuneGrid = expand.grid(alpha = 1,
-                                                lambda = exp(seq(-10, 0, length = 200))),
-                          preProcess = c("zv"),
+                                                lambda = exp(seq(-2, 4, length = 200))),
                           trControl = ctrl)
+plot(lasso_fit, xTrans = function(x) log(x)) #in correct range
+
+saveRDS(lasso_fit, "lasso_imputed.rds")
 ```
 
 
 Ridge:
 ```{r, eval=F}
+set.seed(100)
 
+ridge_fit <- caret::train(x, y,
+                     method = "glmnet",
+                     tuneGrid = expand.grid(alpha = 0, 
+                                            lambda = exp(seq(-2, 10, length = 200))),
+                    trControl = ctrl1)
+
+
+plot(ridge_fit, xTrans = function(x) log(x)) #in correct range
+
+best_lambda_ridge = ridge_fit$bestTune$lambda 
+
+saveRDS(ridge_fit, "ridge.rds")
 ```
 
 
@@ -276,6 +398,7 @@ pcr_fit <- caret::train(x, y,
                         trControl = ctrl,
                         metric = "RMSE",
                         tuneLength = 200)
+saveRDS(pcr_fit, "pcr_imputed.rds")
 ```
 
 
@@ -300,7 +423,7 @@ saveRDS(gam_fit, "gam_fit_imputed.rds")
 MARS:
 ```{r, eval=F}
 mars_grid <- expand.grid(degree = 1:3, # degree: 1 vs 2 vs 3, no interaction vs. interaction;
-                         nprune = 24:40) # nprune is number of coef
+                         nprune = 10:40) # nprune is number of coef
 
 set.seed(2)
 
@@ -309,31 +432,16 @@ mars_fit <- caret::train(x, y,
                          tuneGrid = mars_grid,
                          trControl = ctrl)
 
-#based on initial results, choose parsimonious version
-mars_grid_refined <- expand.grid(degree = 2, nprune = 25:30) 
+saveRDS(mars_fit, "mars.rds")
 
-set.seed(2)
+#based on initial results, choose parsimonious version
+mars_grid_refined <- expand.grid(degree = 2, nprune = 25:40) 
 
 mars_fit_refined <- caret::train(x, y,
                                  method = "earth",
                                  tuneGrid = mars_grid_refined,
                                  trControl = ctrl)
-```
+saveRDS(mars_fit_refined, "mars2.rds")
 
-
-```{r}
-new_x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = test_imputed)[,-1]
-new_y <- test_imputed$heart_disease_mortality_per_100k
-
-new_x2 <- test_imputed %>% select(-heart_disease_mortality_per_100k)
-
-models <- list(gam = gam_fit, 
-               ridge = ridge_fit)
-glimpse(x)
-glimpse(new_x)
-
-new_x[1,]
-x[1,]
-extractPrediction(models, testX = new_x, testY = new_y)
 ```
 

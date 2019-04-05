@@ -53,7 +53,8 @@ data <- response %>%
                 -health__homicides_per_100k, # >90% missing
                 -health__pct_excessive_drinking, # >90% missing
                 -yr,
-                -population) 
+                -population,
+                -row_id) 
 
 
 ## training/test data
@@ -64,7 +65,7 @@ train <- data[train_ind, ] # training dataset
 test <- data[-train_ind, ] # testing dataset
 
 # Imputation for missing values with caret, based on training data
-training_preproc = caret::preProcess(train, 
+training_preproc = caret::preProcess(train[,-1], 
                                      method = "knnImpute", # automatically centers and scales data
                                      pcaComp = 10,
                                      na.remove = TRUE,
@@ -79,6 +80,9 @@ training_preproc = caret::preProcess(train,
 train_imputed = predict(training_preproc, train)
 test_imputed = predict(training_preproc, test)
 
+#save files to Rdata: was not saving the factor structure
+saveRDS(train_imputed, file = './data/train_imputed.Rdata')
+saveRDS(train_imputed, file = './data/test_imputed.Rdata')
 
 # save files to data folder
 write.csv(train, file = './data/train_before_imputed.csv', row.names = F)
