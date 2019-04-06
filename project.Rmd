@@ -198,9 +198,9 @@ train <- read_rds("./data/train_imputed.Rdata")
 x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = train)[,-1]
 y <- train$heart_disease_mortality_per_100k
 
-test = readr::read_rds("data/test_imputed.Rdata")
-test_outcome = test$heart_disease_mortality_per_100k
-test = model.matrix(heart_disease_mortality_per_100k ~ ., data = test)
+test_df = readr::read_rds("data/test_imputed.Rdata")
+test_outcome = test_df$heart_disease_mortality_per_100k
+test = model.matrix(heart_disease_mortality_per_100k ~ ., data = test_df)
 
 # load the model fits from previous runs
 lm_fit <- readRDS("lm_step_imputed.rds")
@@ -229,7 +229,6 @@ We first fit a stepwise linear regression model.
 ### MARS (Laura)
 
 Note that we chose the most parsimonious model.
-
 
 
 ## Model Comparison 
@@ -425,9 +424,31 @@ gridExtra::grid.arrange(p1, p2, p3, p4, p5, p6, p7, ncol = 4)
 _Investigation of GAM_
 
 ```{r}
-plot(gam_fit$finalModel, shade = TRUE, shade.col = "#add8e6")
+#plot(gam_fit$finalModel, shade = TRUE, shade.col = "#add8e6")
+
+library(DALEX)
+
+explainer_gam <- DALEX::explain(gam_fit, label="gam", data = test, y = test_outcome)
+explainer_mars <- DALEX::explain(mars_fit, label= "mars", data = test, y = test_outcome)
+explainer_pcr <- DALEX::explain(pcr_fit, label= "pcr", data = test, y = test_outcome)
+
+
+mp_gam <- model_performance(explainer_gam)
+mp_mars <- model_performance(explainer_mars)
+mp_pcr <- model_performance(explainer_pcr)
+
+plot(mp_gam, mp_mars, mp_pcr)
+
+vi_gam <- variable_importance(explainer_gam, loss_function = loss_root_mean_square)
+vi_mars <- variable_importance(explainer_mars, loss_function = loss_root_mean_square)
+vi_pcr <- variable_importance(explainer_pcr, loss_function = loss_root_mean_square)
+
+plot(vi_gam, vi_mars, vi_pcr)
 ```
 
+Compared to MARS and PCR, GAM gave more weight to the factor variable metropolitan status and metropolitan adjacency.
+
+MARS, GAM, and PCR, had similar distributions of residuals.
 
 ## Discussion
 ```{r include = FALSE}
