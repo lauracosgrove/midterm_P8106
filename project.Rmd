@@ -11,9 +11,10 @@ library(tidyverse)
 library(caret)
 library(earth)
 library(patchwork)
+library(DALEX)
 ```
 
-```{r}
+```{r, echo = FALSE}
 heart <- read_rds("./data/full_processed_data.Rdata")
 
 train <- read_rds("./data/train_imputed.Rdata") 
@@ -35,7 +36,6 @@ pcr_fit <- readRDS("pcr_imputed.rds")
 
 
 ## Introduction
-### Background
 
 Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease mortality. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
 
@@ -44,25 +44,20 @@ Heart disease remains one of the leading causes of death in adults in the US. Un
 
 In our data pre-processing and exploratory analysis, we examined variable distributions (checking for skewness, missing data, etc). We eliminated two variables with over 90% missing data, and used K-nearest neighbors (KNN) to impute reminaing missing values. The dataset was split into training and testing subsets at a parsing 2:1 ratio. There was one categorical variable for which individual factor levels had near-zero variance, but because these levels were part of a larger parameter, we did not remove them. The final dataset includes the outcome (heart disease mortality rate per 100k) and 28 predictors relating to economic, demographic, and health-related county charateristics. 
 
-We built predictive models on the training data using 6 methods: stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS. All model builds were performed using the `caret` package; for lasso, ridge, and MARS, the lamdba selected by `caret` was used. The optimal model was selected based on training RMSE, and models were again compared based on training RMSE. All R code used in this project is provided in the Appendix.
+We built predictive models on the training data using 6 methods: stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS. All model builds were performed using the `caret` package; for lasso, ridge, and MARS, the lamdba selected by `caret` was used. The optimal model was selected based on training RMSE, and models were again compared based on training RMSE. All R code used for model fitting is provided in the Appendix.
 
 
 ## Results
 
-###Exploratory Data Analysis
+### Exploratory Data Analysis
 
 The average county-level heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. Though approximately normally distributed, the exact density of the outcome distribution differs slightly among levels of categorical variables [FIGURE].  
 
 In the category of health, statistics related to lifestyle characteristics (obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity) are highly intercorrelated. Less so are more environmental - or "acts of God" - factors: air particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated). For demography, we found categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables. Given some of the subtleties in these distinctions, we condensed only race into "white" and "non-white". For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate.
 
-Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity.
+Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity. Predictors strongly associated with heart disease mortality are % physical inactivity, % diabetes, % adult obesity, education-related variables, % low birthweight, and overall death rate per 1,000. Many of the variables most strongly-associated with the outcome are associated with one another.
 
-Predictors strongly associated with heart disease mortality are % physical inactivity, % diabetes, % adult obesity, education-related variables, % low birthweight, and overall death rate per 1,000. Many of the variables most strongly-associated with the outcome are associated with one another.
-
-
-
-
-## Linear Models
+### Predictive Models
 
 ```{r, echo=FALSE}
 train <- read_rds("./data/train_imputed.Rdata") 
@@ -82,33 +77,32 @@ lasso_fit <- readRDS("lasso_imputed.rds")
 pcr_fit <- readRDS("pcr_imputed.rds")
 ```
 
+_Final models and RMSE_ 
 
-### Stepwise Selection (Alyssa)
+All models used the majority of all 28 variables (where categorical variables were split into dummy variables).
 
-We first fit a stepwise linear regression model. 
+Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. GAM outperforms all other models in both fields, though MARS has similar performce on predicting outcomes in the test data. All linear models have similar performance.
 
-### Lasso (Charlotte)
+_Coefficient Shrinkage: Lasso and Ridge_
 
-### Ridge (Laura)
+For better visualization, a `glmnet` model was fit and the lambda value selected by `caret` was plotted. 
 
-### PCR (Charlotte)
+_Investigation of MARS_
 
-## Nonlinear Models
+The minimum generalized cross-validation error was achieved for a total of 25 features, including a two-way interaction term. Variable importance is assessed by tracking GCV for each predictor and accumulating the reduction in GCV when each predictor’s feature is added to the model -- the total reduction is used as the measure of variable importance. If a predictor was never used in any MARS basis function, it has an importance value of zero; 18 predictors were used in a MARS basis function.
 
-### GAM (Alyssa)
+MARS retained interactions between many sets of health-related variables, which one might expect given collinearity (and relatedness) between the within-category variable sets. Interaction terms were also present across categories.
 
-### MARS (Laura)
+_Investigation of GAM_
 
-Note that we chose the most parsimonious model.
+Compared to MARS and PCR, GAM gave more weight to the factor variable metropolitan status and metropolitan adjacency.
 
+MARS, GAM, and PCR, had similar distributions of residuals.
 
-## Model Comparison 
+## Discussion
 
-### Training RMSE
-
-```{r, echo = FALSE}
+```{r include = FALSE}
 set.seed(2)
-
 # resample each model to compare 
 res <- resamples(list(
   Stepwise = lm_fit,
@@ -119,223 +113,16 @@ res <- resamples(list(
   MARS = mars_fit
   ))
 
-# plot RMSE ad CI for each model to compare predictive ability
-ggplot(res, metric = "RMSE") +
-  theme_minimal() +
-  labs(title = "Resampled Training RMSE")
-```
-
-The more flexible model 
-
-### Test RMSE (Alyssa)
-
-```{r, echo = FALSE}
-pred_lm = predict(lm_fit, newdata = test)
-pred_ridge = predict(ridge_fit, test)
-pred_lasso = predict(lasso_fit, test)
-pred_pcr = predict(pcr_fit, test)
-pred_gam = predict(gam_fit, test)
-pred_mars = predict(mars_fit, test)
-
-data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
-           test_rmse = c(sqrt(mean((pred_lm - test_outcome)^2)),
-                         sqrt(mean((pred_ridge - test_outcome)^2)),
-                         sqrt(mean((pred_lasso - test_outcome)^2)),
-                         sqrt(mean((pred_pcr - test_outcome)^2)),
-                         sqrt(mean((pred_gam - test_outcome)^2)),
-                         sqrt(mean((pred_mars - test_outcome)^2)))) %>%
-  `colnames<-`(c("Train RMSE", "Test RMSE")) %>%
-  knitr::kable(caption = "Predictive RMSE on training and test data")
-```
-
-
-Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. GAM outperforms all other models in both fields, though MARS has similar performce on predicting outcomes in the test data. All linear models have similar performance.
-
-
-### Interpretations (Laura)
-
-_Coefficient Shrinkage: Lasso and Ridge_
-
-```{r, echo = FALSE, warning = FALSE}
-
-##Coefficient Shrinkage
-
-### Ridge 
-best_lambda_ridge = ridge_fit$bestTune$lambda 
-
-ridge_cv_glmnet <- glmnet::cv.glmnet(x, y, 
-                      alpha = 0, 
-                      lambda = exp(seq(-2, 10, length = 200)), 
-                      type.measure = "mse")
-
-### Lasso 
-best_lambda_lasso = lasso_fit$bestTune$lambda 
-
-predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
-  dim() #no shrinkage
-
-lasso_cv_glmnet <- glmnet::cv.glmnet(x, y, 
-                      alpha = 1, 
-                      lambda = exp(seq(-2, 4, length = 200)), 
-                      type.measure = "mse")
-
-plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
-abline(v = log(best_lambda_ridge), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Ridge")
-
-plotmo::plot_glmnet(lasso_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
-abline(v = log(best_lambda_lasso), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Lasso")
-#could suggest selection of a more parsimonious model: lambda = exp(0)
-
-#### Some of the most "important" coefficients
-predict(ridge_fit$finalModel, s = best_lambda_ridge, type = "coefficients") %>% 
-  broom::tidy() %>% 
-  arrange(desc(abs(value))) %>% 
-  top_n(10) %>% 
-  knitr::kable(format = "latex", caption = "Top Absolute-Values Coefficients, Ridge")
-
-predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
-  broom::tidy() %>% 
-  arrange(desc(abs(value))) %>% 
-  top_n(10) %>% 
-  knitr::kable(format = "latex", caption = "Top Absolute-Valued Coefficients, Lasso")
-```
-
-For better visualization, a `glmnet` model was fit and the lambda value selected by `caret` was plotted. 
-
-Overall, this modeling problem was perhaps not the best fit for lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot, where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve MSE for this problem.
-
-If lasso and ridge were more appropriate for the problem, parameter selection might have been more obvious. As it is, as shown below, the standard error of the mean cross-validated error is quite wide.
-
-```{r, echo = FALSE}
-## MSE 
-### Ridge
-ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
-
-ridge_cv_table_best <- ridge_cv_table %>% 
-  arrange(mse) %>% 
-  slice(which.min(abs(lambda_values - best_lambda_ridge)))
-
-ridge_mse_plot <- ridge_cv_table %>% 
-  filter(lambda_values %in% exp(seq(-2, 5, length = 200))) %>% 
-  ggplot(aes(x = log(lambda_values), y = mse)) +
-  geom_point() +
-  geom_point(aes(x = log(best_lambda_ridge), y = ridge_cv_table_best$mse), color = "red") +
-  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3) + 
-  labs(title = "Ridge Parameter Selection") +
-  annotate("text", x = 0.5 + log(best_lambda_ridge), y = 1.05*ridge_cv_table_best$mse, label = "Lambda chosen by caret", color = "red") + 
-  theme_minimal()
-
-### Lasso
-lasso_cv_table <- tibble(lambda_values = lasso_cv_glmnet$lambda, mse = lasso_cv_glmnet$cvm, mse_upper = lasso_cv_glmnet$cvup, mse_lower = lasso_cv_glmnet$cvlo)
-
-lasso_cv_table_best <- lasso_cv_table %>% 
-  arrange(mse) %>% 
-  slice(which.min(abs(lambda_values - best_lambda_lasso)))
-
-lasso_mse_plot <- lasso_cv_table %>% 
-  filter(lambda_values %in% exp(seq(-2, 0, length = 200))) %>% 
-  ggplot(aes(x = log(lambda_values), y = mse)) +
-  geom_point() +
-  geom_point(aes(x = log(best_lambda_lasso), y = lasso_cv_table_best$mse), color = "red") +
-  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3) +
-  labs(title = "Lasso Parameter Selection") + 
-  theme_minimal()
-library(patchwork)
-
-ridge_mse_plot + lasso_mse_plot
-```
-
-_Investigation of MARS_
-
-The minimum generalized cross-validation error was achieved for a total of 25 features, including a two-way interaction term. Variable importance is assessed by tracking GCV for each predictor and accumulating the reduction in GCV when each predictor’s feature is added to the model -- the total reduction is used as the measure of variable importance. If a predictor was never used in any MARS basis function, it has an importance value of zero; 18 predictors were used in a MARS basis function.
-
-MARS retained interactions between many sets of health-related variables, which one might expect given collinearity (and relatedness) between the within-category variable sets. Interaction terms were also present across categories.
-
-```{r, echo = FALSE, fig.width = 10}
-vip::vip(mars_fit, num_features = 18, bar = FALSE, value = "gcv") + ggtitle("GCV")
-
-str_remove_hlth <- function(x) {
-  str_remove(x, pattern = "health__")
-}
-
-str_remove_econ <- function(x) {
-  str_remove(x, pattern = "econ__")
-}
-
-str_remove_demo <- function(x) {
-  str_remove(x, pattern = "demo__")
-}
-
-coef(mars_fit$finalModel) %>%
-  broom::tidy() %>% 
-  mutate(names = str_remove_hlth(names)) %>% 
-  mutate(names = str_remove_hlth(names)) %>% 
-  mutate(names = str_remove_econ(names)) %>% 
-  mutate(names = str_remove_econ(names)) %>% 
-  mutate(names = str_remove_demo(names)) %>% 
-  mutate(names = str_remove_demo(names)) #%>% #repeated bc appears twice
- # knitr::kable(format = "latex")# %>% 
-  #kableExtra::kable_styling(latex_options = "scale_down") 
-
-p1 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity"), grid.resolution = 10) %>% autoplot()
-p2 <- pdp::partial(mars_fit, pred.var = c("demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>% autoplot()
-p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_diabetes"), grid.resolution = 10) %>% autoplot()
-p4 <- pdp::partial(mars_fit, pred.var = c("health__pop_per_dentist"), grid.resolution = 10) %>% autoplot()
-
-p5 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>%  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
-p6 <- pdp::partial(mars_fit, pred.var = c("health__pct_diabetes", "demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>%  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
-p7 <- pdp::partial(mars_fit, pred.var = c("health__pct_diabetes", "health__pop_per_dentist"), grid.resolution = 10) %>%  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
-
-
-gridExtra::grid.arrange(p1, p2, p3, p4, p5, p6, p7, ncol = 4)
-
-```
-
-
-_Investigation of GAM_
-
-<<<<<<< HEAD
-```{r, echo=FALSE}
-
-=======
-```{r}
-#plot(gam_fit$finalModel, shade = TRUE, shade.col = "#add8e6")
-
-library(DALEX)
-
-explainer_gam <- DALEX::explain(gam_fit, label="gam", data = test, y = test_outcome)
-explainer_mars <- DALEX::explain(mars_fit, label= "mars", data = test, y = test_outcome)
-explainer_pcr <- DALEX::explain(pcr_fit, label= "pcr", data = test, y = test_outcome)
-
-
-mp_gam <- model_performance(explainer_gam)
-mp_mars <- model_performance(explainer_mars)
-mp_pcr <- model_performance(explainer_pcr)
-
-plot(mp_gam, mp_mars, mp_pcr)
-
-vi_gam <- variable_importance(explainer_gam, loss_function = loss_root_mean_square)
-vi_mars <- variable_importance(explainer_mars, loss_function = loss_root_mean_square)
-vi_pcr <- variable_importance(explainer_pcr, loss_function = loss_root_mean_square)
-
-plot(vi_gam, vi_mars, vi_pcr)
->>>>>>> 7f5eeaf0193cfcf6612b0f94e76996f22908eef4
-```
-
-Compared to MARS and PCR, GAM gave more weight to the factor variable metropolitan status and metropolitan adjacency.
-
-MARS, GAM, and PCR, had similar distributions of residuals.
-
-## Discussion
-```{r include = FALSE}
 cv_RMSE <- summary(res)$statistics$RMSE
 gam_RMSE <- summary(res)$statistics$RMSE[5,]
 ```
 
 
-GAM was our best-performing model. With GAM, we were able to achieve a cross-validated RMSE of median `r paste(round(gam_RMSE[3], 2))` and bootstrapped interquartile range of (`r paste(round(gam_RMSE[2], 2))`, `r paste(round(gam_RMSE[5], 2))`. GAM, and MARS, also performed well on the test data
+GAM was our best-performing model. With GAM, we were able to achieve a cross-validated RMSE of median `r paste(round(gam_RMSE[3], 2))` and bootstrapped interquartile range of (`r paste(round(gam_RMSE[2], 2))`, `r paste(round(gam_RMSE[5], 2))`. GAM, and MARS, also performed well on the test data. 
 
-However, simpler and more interpretable linear models were close in performance to the more flexible models.
+This modeling problem was perhaps not best addressed by fitting lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot [FIGURE], where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve RMSE for this problem. Had these methods been more appropriate in this context, parameter selection might have been more obvious. As it is, as shown [IN FIGURE BLANK], the standard error of the mean cross-validated error is quite wide.
+
+As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred.
 
 
 
@@ -344,7 +131,7 @@ However, simpler and more interpretable linear models were close in performance 
 ## Tables and Figures
 
 ```{r, echo = FALSE, fig.width = 10}
-##Factor Variables
+#Factor Variables
 heart %>% 
   ggplot(aes(x = heart_disease_mortality_per_100k, y = metro, height = ..density..)) +
   ggjoy::geom_joy(scale = 0.85)
@@ -480,6 +267,184 @@ heart_attacks_cor %>%
     knitr::kable(format = "latex", caption = "Correlation with Outcome", digits = 2)
 
 ```
+
+
+```{r, echo = FALSE}
+
+
+# plot RMSE ad CI for each model to compare predictive ability
+ggplot(res, metric = "RMSE") +
+  theme_minimal() +
+  labs(title = "Resampled Training RMSE")
+
+pred_lm = predict(lm_fit, newdata = test)
+pred_ridge = predict(ridge_fit, test)
+pred_lasso = predict(lasso_fit, test)
+pred_pcr = predict(pcr_fit, test)
+pred_gam = predict(gam_fit, test)
+pred_mars = predict(mars_fit, test)
+
+data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
+           test_rmse = c(sqrt(mean((pred_lm - test_outcome)^2)),
+                         sqrt(mean((pred_ridge - test_outcome)^2)),
+                         sqrt(mean((pred_lasso - test_outcome)^2)),
+                         sqrt(mean((pred_pcr - test_outcome)^2)),
+                         sqrt(mean((pred_gam - test_outcome)^2)),
+                         sqrt(mean((pred_mars - test_outcome)^2)))) %>%
+  `colnames<-`(c("Train RMSE", "Test RMSE")) %>%
+  knitr::kable(caption = "Predictive RMSE on training and test data")
+```
+
+
+```{r, echo = FALSE, warning = FALSE}
+
+##Coefficient Shrinkage
+
+### Ridge 
+best_lambda_ridge = ridge_fit$bestTune$lambda 
+
+ridge_cv_glmnet <- glmnet::cv.glmnet(x, y, 
+                      alpha = 0, 
+                      lambda = exp(seq(-2, 10, length = 200)), 
+                      type.measure = "mse")
+
+### Lasso 
+best_lambda_lasso = lasso_fit$bestTune$lambda 
+
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
+  dim() #no shrinkage
+
+lasso_cv_glmnet <- glmnet::cv.glmnet(x, y, 
+                      alpha = 1, 
+                      lambda = exp(seq(-2, 4, length = 200)), 
+                      type.measure = "mse")
+
+plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
+abline(v = log(best_lambda_ridge), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Ridge")
+
+plotmo::plot_glmnet(lasso_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
+abline(v = log(best_lambda_lasso), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Lasso")
+#could suggest selection of a more parsimonious model: lambda = exp(0)
+
+#### Some of the most "important" coefficients
+predict(ridge_fit$finalModel, s = best_lambda_ridge, type = "coefficients") %>% 
+  broom::tidy() %>% 
+  arrange(desc(abs(value))) %>% 
+  top_n(10) %>% 
+  knitr::kable(format = "latex", caption = "Top Absolute-Values Coefficients, Ridge")
+
+predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
+  broom::tidy() %>% 
+  arrange(desc(abs(value))) %>% 
+  top_n(10) %>% 
+  knitr::kable(format = "latex", caption = "Top Absolute-Valued Coefficients, Lasso")
+```
+
+```{r, echo = FALSE}
+## MSE 
+### Ridge
+ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
+
+ridge_cv_table_best <- ridge_cv_table %>% 
+  arrange(mse) %>% 
+  slice(which.min(abs(lambda_values - best_lambda_ridge)))
+
+ridge_mse_plot <- ridge_cv_table %>% 
+  filter(lambda_values %in% exp(seq(-2, 5, length = 200))) %>% 
+  ggplot(aes(x = log(lambda_values), y = mse)) +
+  geom_point() +
+  geom_point(aes(x = log(best_lambda_ridge), y = ridge_cv_table_best$mse), color = "red") +
+  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3) + 
+  labs(title = "Ridge Parameter Selection") +
+  annotate("text", x = 0.5 + log(best_lambda_ridge), y = 1.05*ridge_cv_table_best$mse, label = "Lambda chosen by caret", color = "red") + 
+  theme_minimal()
+
+### Lasso
+lasso_cv_table <- tibble(lambda_values = lasso_cv_glmnet$lambda, mse = lasso_cv_glmnet$cvm, mse_upper = lasso_cv_glmnet$cvup, mse_lower = lasso_cv_glmnet$cvlo)
+
+lasso_cv_table_best <- lasso_cv_table %>% 
+  arrange(mse) %>% 
+  slice(which.min(abs(lambda_values - best_lambda_lasso)))
+
+lasso_mse_plot <- lasso_cv_table %>% 
+  filter(lambda_values %in% exp(seq(-2, 0, length = 200))) %>% 
+  ggplot(aes(x = log(lambda_values), y = mse)) +
+  geom_point() +
+  geom_point(aes(x = log(best_lambda_lasso), y = lasso_cv_table_best$mse), color = "red") +
+  geom_ribbon(aes(ymin = mse_lower, ymax = mse_upper), alpha = 0.3) +
+  labs(title = "Lasso Parameter Selection") + 
+  theme_minimal()
+library(patchwork)
+
+ridge_mse_plot + lasso_mse_plot
+```
+
+```{r, echo = FALSE, fig.width = 10}
+vip::vip(mars_fit, num_features = 18, bar = FALSE, value = "gcv") + ggtitle("GCV")
+
+str_remove_hlth <- function(x) {
+  str_remove(x, pattern = "health__")
+}
+
+str_remove_econ <- function(x) {
+  str_remove(x, pattern = "econ__")
+}
+
+str_remove_demo <- function(x) {
+  str_remove(x, pattern = "demo__")
+}
+
+coef(mars_fit$finalModel) %>%
+  broom::tidy() %>% 
+  mutate(names = str_remove_hlth(names)) %>% 
+  mutate(names = str_remove_hlth(names)) %>% 
+  mutate(names = str_remove_econ(names)) %>% 
+  mutate(names = str_remove_econ(names)) %>% 
+  mutate(names = str_remove_demo(names)) %>% 
+  mutate(names = str_remove_demo(names)) #%>% #repeated bc appears twice
+ # knitr::kable(format = "latex")# %>% 
+  #kableExtra::kable_styling(latex_options = "scale_down") 
+
+p1 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity"), grid.resolution = 10) %>% autoplot()
+p2 <- pdp::partial(mars_fit, pred.var = c("demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>% autoplot()
+p3 <- pdp::partial(mars_fit, pred.var = c("health__pct_diabetes"), grid.resolution = 10) %>% autoplot()
+p4 <- pdp::partial(mars_fit, pred.var = c("health__pop_per_dentist"), grid.resolution = 10) %>% autoplot()
+
+p5 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity", "demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>%  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
+p6 <- pdp::partial(mars_fit, pred.var = c("health__pct_diabetes", "demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>%  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
+p7 <- pdp::partial(mars_fit, pred.var = c("health__pct_diabetes", "health__pop_per_dentist"), grid.resolution = 10) %>%  pdp::plotPartial(levelplot = FALSE, zlab = "yhat", drape = TRUE, colorkey = TRUE, screen = list(z = -20, x = -60))
+
+
+gridExtra::grid.arrange(p1, p2, p3, p4, p5, p6, p7, ncol = 4)
+
+```
+
+```{r, echo=FALSE}
+#plot(gam_fit$finalModel, shade = TRUE, shade.col = "#add8e6")
+
+explainer_gam <- DALEX::explain(gam_fit, label = "gam", data = test, y = test_outcome)
+explainer_mars <- DALEX::explain(mars_fit, label = "mars", data = test, y = test_outcome)
+explainer_pcr <- DALEX::explain(pcr_fit, label = "pcr", data = test, y = test_outcome)
+
+
+mp_gam <- model_performance(explainer_gam)
+mp_mars <- model_performance(explainer_mars)
+mp_pcr <- model_performance(explainer_pcr)
+
+plot(mp_gam, mp_mars, mp_pcr)
+
+vi_gam <- variable_importance(explainer_gam, loss_function = loss_root_mean_square)
+vi_mars <- variable_importance(explainer_mars, loss_function = loss_root_mean_square)
+vi_pcr <- variable_importance(explainer_pcr, loss_function = loss_root_mean_square)
+
+plot(vi_gam, vi_mars, vi_pcr)
+```
+
+```{r, echo = FALSE}
+knitr::include_graphics("gam_s(18yrs_younger).png")
+knitr::include_graphics("GAM_s(bachelors_or_higher).png")
+```
+
 
 \pagebreak
 
