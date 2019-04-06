@@ -14,6 +14,27 @@ library(patchwork)
 ```
 
 
+```{r}
+heart <- read_rds("./data/full_processed_data.Rdata")
+
+train <- read_rds("./data/train_imputed.Rdata") 
+x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = train)[,-1]
+y <- train$heart_disease_mortality_per_100k
+
+test = readr::read_rds("data/test_imputed.Rdata")
+test_outcome = test$heart_disease_mortality_per_100k
+test = model.matrix(heart_disease_mortality_per_100k ~ ., data = test)
+
+# load the model fits from previous runs
+lm_fit <- readRDS("lm_step_imputed.rds")
+ridge_fit <- readRDS("ridge.rds")
+mars_fit <- readRDS("mars2.rds")
+gam_fit <- readRDS("gam_fit_imputed.rds")
+lasso_fit <- readRDS("lasso_imputed.rds")
+pcr_fit <- readRDS("pcr_imputed.rds")
+```
+
+
 ## Introduction
 ### Background
 
@@ -31,159 +52,9 @@ We built predictive models on the training data using 6 methods: stepwise linear
 
 ###Exploratory Data Analysis
 
+The average county-level heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. Though approximately normally distributed, the exact density of the outcome distribution differs slightly among levels of categorical variables [FIGURE].  
 
-```{r, echo = FALSE, fig.width = 10}
-heart <- read_rds("./data/full_processed_data.Rdata")
-
-##Factor Variables
-heart %>% 
-  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro, height = ..density..)) +
-  ggjoy::geom_joy(scale = 0.85)
-
-heart %>% 
-  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro_adjacency, fill = urban_influence, height = ..density..)) +
-  ggjoy::geom_joy(scale = 0.85, alpha = 0.3) 
-
-```
-
-The global mean of heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. It is approximately normally distributed.
-
-The distribution of heart disease mortality differs among levels of factor variables, but is broadly similar. Many of the factor variables included in this dataset contain similar information at different levels of interaction, or hierarchical division. For example, as shown in the second density plot, metro adjacency (a variable created from the original RUCCS hierarchical coding) is a less fine-grained look at urban influence, and urban influence may then function as an interaction between metro adjacency and population (in our dataset, `pure_population` is also created from the original RUCCS hierarchical coding in pre-processing) To get at these different specificities and as a "proxy" for including pseudo-interaction terms, we include all these factor variables for our initial model fit. 
-
-### Correlations and Collinearity
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.width = 10}
-
-##Functions
-substring = function(x) {str_sub(x, start = -25)}
-
-str_remove_hlth <- function(x) {
-  str_remove(x, pattern = "health__")
-}
-
-str_remove_econ <- function(x) {
-  str_remove(x, pattern = "econ__")
-}
-
-str_remove_demo <- function(x) {
-  str_remove(x, pattern = "demo__")
-}
-
-str_remove_pct <- function(x) {
-  str_remove(x, pattern = "pct_")
-}
-
-#Within category correlation
-par(mfrow = c(1,3))
-
-heart %>% 
-  select_if(is.numeric) %>% 
-  select(starts_with("econ")) %>% 
-  rename_all(str_remove_econ) %>% 
-  rename_all(str_remove_pct) %>% 
-  rename_all(substring) %>% 
-  drop_na() %>% 
-  cor() %>% 
-  corrplot::corrplot(method = "ellipse")
-
-heart %>% 
-  select_if(is.numeric) %>% 
-  select(starts_with("demo")) %>% 
-  rename_all(str_remove_demo) %>% 
-  rename_all(str_remove_pct) %>% 
-  rename_all(substring) %>% 
-  drop_na() %>% 
-  cor() %>% 
-  corrplot::corrplot(method = "ellipse")
-
-heart %>% 
-  select_if(is.numeric) %>% 
-  select(starts_with("health")) %>% 
-  rename_all(str_remove_hlth) %>% 
-  rename_all(str_remove_pct) %>% 
-  rename_all(substring) %>% 
-  drop_na() %>% 
-  cor() %>% 
-  corrplot::corrplot(method = "ellipse")
-
-cor_matrix <- heart %>% 
-  select_if(is.numeric) %>% 
-  drop_na() %>% 
-  cor()
-
-cor_tibble = as_tibble(cor_matrix)
-
-## Between category correlation
-econ <- tibble(variable = names(cor_tibble),
-                  econ__pct_civilian_labor = cor_tibble$econ__pct_civilian_labor,
-       econ__pct_unemployment = cor_tibble$econ__pct_unemployment,
-       econ__pct_uninsured_adults = cor_tibble$econ__pct_uninsured_adults,
-       econ__pct_uninsured_children = cor_tibble$econ__pct_uninsured_children) %>% 
-  filter(variable != "heart_disease_mortality_per_100k",
-         !str_detect(variable, "econ")) %>% 
-  arrange(variable) %>% 
-  mutate(flag = case_when(abs(econ__pct_civilian_labor) > 0.6 ~ "flag",
-                        abs(econ__pct_unemployment) > 0.6 ~ "flag",
-                        abs(econ__pct_uninsured_adults) > 0.6 ~ "flag",
-                        abs(econ__pct_uninsured_children) > 0.6 ~ "flag")) %>% 
-  filter(flag == "flag") %>% 
-  select(-flag)
-
-health <- tibble(variable = names(cor_tibble),
-                  health__air_pollution_particulate_matter = cor_tibble$health__air_pollution_particulate_matter,
-       health__motor_vehicle_crash_deaths_per_100k = cor_tibble$health__motor_vehicle_crash_deaths_per_100k,
-       health__pct_adult_obesity = cor_tibble$health__pct_adult_obesity,
-       health__pct_adult_smoking = cor_tibble$health__pct_adult_smoking,
-      health__pct_diabetes = cor_tibble$health__pct_diabetes,
-       health__pct_low_birthweight = cor_tibble$health__pct_low_birthweight,
-       health__pct_physical_inacticity = cor_tibble$health__pct_physical_inacticity,
-       health__pop_per_dentist = cor_tibble$health__pop_per_dentist,
-      health__pop_per_primary_care_physician = cor_tibble$health__pop_per_primary_care_physician) %>% 
-  filter(variable != "heart_disease_mortality_per_100k",
-         !str_detect(variable, "health")) %>% 
-  arrange(variable) %>% 
-  mutate(flag = case_when(abs(health__air_pollution_particulate_matter) > 0.6 ~ "flag",
-                        abs(health__motor_vehicle_crash_deaths_per_100k) > 0.6 ~ "flag",
-                        abs(health__pct_adult_obesity) > 0.6 ~ "flag",
-                        abs(health__pct_adult_smoking) > 0.6 ~ "flag",
-                      abs(health__pct_diabetes) > 0.6 ~ "flag",
-                      abs(health__pct_low_birthweight) > 0.6 ~ "flag",
-                      abs(health__pct_physical_inacticity) > 0.6 ~ "flag",
-                      abs(health__pop_per_dentist) > 0.6 ~ "flag",
-                      abs(health__pop_per_primary_care_physician) > 0.6 ~ "flag")) %>% 
-  filter(flag == "flag")
-
-econ <- econ %>% 
-  gather(key = with, value = correlation, starts_with("econ")) %>% 
-  filter(abs(correlation) > 0.6)
-
-health <- health %>% 
-  select(-flag) %>% 
-  gather(key = with, value = correlation, starts_with("health")) %>% 
-  group_by(variable) %>% 
-  filter(abs(correlation) > 0.6)
-
-multicollinearity <- full_join(econ, health)
-
-multicollinearity %>% 
-  knitr::kable(format = "latex", caption = "Highly Correlated Predictors Between Categories", digits = 2)
-
-##Correlation with outcome
-heart_attacks_cor = tibble(variable = names(cor_tibble),
-                     correlation = cor_tibble$heart_disease_mortality_per_100k)
-
-heart_attacks_cor %>% 
-    arrange(desc(abs(correlation))) %>% 
-    knitr::kable(format = "latex", caption = "Correlation with Outcome", digits = 2)
-
-```
-
-We investigated possible multicollinearity both between and within categories.
-
-Health statistics related to healthy behaviors are highly intercorrelated: obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity. Less so are more environment- or "acts of God"-related health behaviors: particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated).
-
-For demography, there's some categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables.
-
-For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate.
+In the category of health, statistics related to lifestyle characteristics (obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity) are highly intercorrelated. Less so are more environmental - or "acts of God" - factors: air particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated). For demography, we found categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables. Given some of the subtleties in these distinctions, we condensed only race into "white" and "non-white". For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate.
 
 Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity.
 
@@ -196,21 +67,7 @@ Predictors strongly associated with heart disease mortality are % physical inact
 ## Linear Models
 
 ```{r, echo=FALSE}
-train <- read_rds("./data/train_imputed.Rdata") 
-x <- model.matrix(heart_disease_mortality_per_100k ~ ., data = train)[,-1]
-y <- train$heart_disease_mortality_per_100k
 
-test = readr::read_rds("data/test_imputed.Rdata")
-test_outcome = test$heart_disease_mortality_per_100k
-test = model.matrix(heart_disease_mortality_per_100k ~ ., data = test)
-
-# load the model fits from previous runs
-lm_fit <- readRDS("lm_step_imputed.rds")
-ridge_fit <- readRDS("ridge.rds")
-mars_fit <- readRDS("mars2.rds")
-gam_fit <- readRDS("gam_fit_imputed.rds")
-lasso_fit <- readRDS("lasso_imputed.rds")
-pcr_fit <- readRDS("pcr_imputed.rds")
 ```
 
 
@@ -442,7 +299,151 @@ GAM was our best-performing model. With GAM, we were able to achieve a cross-val
 
 However, simpler and more interpretable linear models were close in performance to the more flexible models.
 
+
+\pagebreak 
+
+## Tables and Figures
+
+```{r, echo = FALSE, fig.width = 10}
+##Factor Variables
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro, height = ..density..)) +
+  ggjoy::geom_joy(scale = 0.85)
+
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro_adjacency, fill = urban_influence, height = ..density..)) +
+  ggjoy::geom_joy(scale = 0.85, alpha = 0.3) 
+
+```
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.width = 10}
+
+##Functions
+substring = function(x) {str_sub(x, start = -25)}
+
+str_remove_hlth <- function(x) {
+  str_remove(x, pattern = "health__")
+}
+
+str_remove_econ <- function(x) {
+  str_remove(x, pattern = "econ__")
+}
+
+str_remove_demo <- function(x) {
+  str_remove(x, pattern = "demo__")
+}
+
+str_remove_pct <- function(x) {
+  str_remove(x, pattern = "pct_")
+}
+
+#Within category correlation
+par(mfrow = c(1,3))
+
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("econ")) %>% 
+  rename_all(str_remove_econ) %>% 
+  rename_all(str_remove_pct) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("demo")) %>% 
+  rename_all(str_remove_demo) %>% 
+  rename_all(str_remove_pct) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+
+heart %>% 
+  select_if(is.numeric) %>% 
+  select(starts_with("health")) %>% 
+  rename_all(str_remove_hlth) %>% 
+  rename_all(str_remove_pct) %>% 
+  rename_all(substring) %>% 
+  drop_na() %>% 
+  cor() %>% 
+  corrplot::corrplot(method = "ellipse")
+
+cor_matrix <- heart %>% 
+  select_if(is.numeric) %>% 
+  drop_na() %>% 
+  cor()
+
+cor_tibble = as_tibble(cor_matrix)
+
+## Between category correlation
+econ <- tibble(variable = names(cor_tibble),
+                  econ__pct_civilian_labor = cor_tibble$econ__pct_civilian_labor,
+       econ__pct_unemployment = cor_tibble$econ__pct_unemployment,
+       econ__pct_uninsured_adults = cor_tibble$econ__pct_uninsured_adults,
+       econ__pct_uninsured_children = cor_tibble$econ__pct_uninsured_children) %>% 
+  filter(variable != "heart_disease_mortality_per_100k",
+         !str_detect(variable, "econ")) %>% 
+  arrange(variable) %>% 
+  mutate(flag = case_when(abs(econ__pct_civilian_labor) > 0.6 ~ "flag",
+                        abs(econ__pct_unemployment) > 0.6 ~ "flag",
+                        abs(econ__pct_uninsured_adults) > 0.6 ~ "flag",
+                        abs(econ__pct_uninsured_children) > 0.6 ~ "flag")) %>% 
+  filter(flag == "flag") %>% 
+  select(-flag)
+
+health <- tibble(variable = names(cor_tibble),
+                  health__air_pollution_particulate_matter = cor_tibble$health__air_pollution_particulate_matter,
+       health__motor_vehicle_crash_deaths_per_100k = cor_tibble$health__motor_vehicle_crash_deaths_per_100k,
+       health__pct_adult_obesity = cor_tibble$health__pct_adult_obesity,
+       health__pct_adult_smoking = cor_tibble$health__pct_adult_smoking,
+      health__pct_diabetes = cor_tibble$health__pct_diabetes,
+       health__pct_low_birthweight = cor_tibble$health__pct_low_birthweight,
+       health__pct_physical_inacticity = cor_tibble$health__pct_physical_inacticity,
+       health__pop_per_dentist = cor_tibble$health__pop_per_dentist,
+      health__pop_per_primary_care_physician = cor_tibble$health__pop_per_primary_care_physician) %>% 
+  filter(variable != "heart_disease_mortality_per_100k",
+         !str_detect(variable, "health")) %>% 
+  arrange(variable) %>% 
+  mutate(flag = case_when(abs(health__air_pollution_particulate_matter) > 0.6 ~ "flag",
+                        abs(health__motor_vehicle_crash_deaths_per_100k) > 0.6 ~ "flag",
+                        abs(health__pct_adult_obesity) > 0.6 ~ "flag",
+                        abs(health__pct_adult_smoking) > 0.6 ~ "flag",
+                      abs(health__pct_diabetes) > 0.6 ~ "flag",
+                      abs(health__pct_low_birthweight) > 0.6 ~ "flag",
+                      abs(health__pct_physical_inacticity) > 0.6 ~ "flag",
+                      abs(health__pop_per_dentist) > 0.6 ~ "flag",
+                      abs(health__pop_per_primary_care_physician) > 0.6 ~ "flag")) %>% 
+  filter(flag == "flag")
+
+econ <- econ %>% 
+  gather(key = with, value = correlation, starts_with("econ")) %>% 
+  filter(abs(correlation) > 0.6)
+
+health <- health %>% 
+  select(-flag) %>% 
+  gather(key = with, value = correlation, starts_with("health")) %>% 
+  group_by(variable) %>% 
+  filter(abs(correlation) > 0.6)
+
+multicollinearity <- full_join(econ, health)
+
+multicollinearity %>% 
+  knitr::kable(format = "latex", caption = "Highly Correlated Predictors Between Categories", digits = 2)
+
+##Correlation with outcome
+heart_attacks_cor = tibble(variable = names(cor_tibble),
+                     correlation = cor_tibble$heart_disease_mortality_per_100k)
+
+heart_attacks_cor %>% 
+    arrange(desc(abs(correlation))) %>% 
+    knitr::kable(format = "latex", caption = "Correlation with Outcome", digits = 2)
+
+```
+
 \pagebreak
+
 ## Appendix
 
 ### Data prep
