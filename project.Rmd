@@ -436,7 +436,7 @@ mp_step <- model_performance(explainer_step)
 plot(mp_gam, mp_mars, mp_pcr, mp_lasso)
 ```
 
-```{r variable importance, echo=FALSE, fig.cap = "GAM performance relies heavily on the weight of metropolitan status. Otherwise, variable importance was similar."}
+```{r variable importance, echo=FALSE, fig.cap = "GAM performance relies heavily on the weight of metropolitan status"}
 explainer_gam <- DALEX::explain(gam_fit, label = "gam", data = test, y = test_outcome)
 explainer_mars <- DALEX::explain(mars_fit, label = "mars", data = test, y = test_outcome)
 explainer_pcr <- DALEX::explain(pcr_fit, label = "pcr", data = test, y = test_outcome)
