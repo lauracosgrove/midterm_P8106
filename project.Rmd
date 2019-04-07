@@ -37,15 +37,14 @@ pcr_fit <- readRDS("pcr_imputed.rds")
 
 ## Introduction
 
-Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease mortality. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
+Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease mortality. Identifying county-level environmental and demographic predictor for heart disease mortality could aid in effective targeting of national campaigns to increase education and reduce risk. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
 
 
 ## Methods
 
 In our data pre-processing and exploratory analysis, we examined variable distributions (checking for skewness, missing data, etc). We eliminated two variables with over 90% missing data, and used K-nearest neighbors (KNN) to impute reminaing missing values. The dataset was split into training and testing subsets at a parsing 2:1 ratio. There was one categorical variable for which individual factor levels had near-zero variance, but because these levels were part of a larger parameter, we did not remove them. The final dataset includes the outcome (heart disease mortality rate per 100k) and 28 predictors relating to economic, demographic, and health-related county charateristics. 
 
-We built predictive models on the training data using 6 methods: stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS. All model builds were performed using the `caret` package; for lasso, ridge, and MARS, the lamdba selected by `caret` was used. The optimal model was selected based on training RMSE, and models were again compared based on training RMSE. All R code used for model fitting is provided in the Appendix.
-
+We built predictive models on the training data using 6 methods: stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS. All model builds were performed using the `caret` package, and optimal model parameters were selected based on minimizing MSE (or, in the case of MARS, generalized cross-validation error) with 10-fold cross-validation, repeated five times. The optimal model was selected based on training RMSE, and models were again compared based on test RMSE. All R code used for model fitting is provided in the Appendix.
 
 ## Results
 
@@ -124,6 +123,7 @@ This modeling problem was perhaps not best addressed by fitting lasso and ridge.
 
 As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred.
 
+Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Appendix [FIGURE BLANK]. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables Metro and Metro Adjacency. 
 
 
 \pagebreak 
@@ -425,19 +425,26 @@ gridExtra::grid.arrange(p1, p2, p3, p4, p5, p6, p7, ncol = 4)
 explainer_gam <- DALEX::explain(gam_fit, label = "gam", data = test, y = test_outcome)
 explainer_mars <- DALEX::explain(mars_fit, label = "mars", data = test, y = test_outcome)
 explainer_pcr <- DALEX::explain(pcr_fit, label = "pcr", data = test, y = test_outcome)
-
+explainer_lasso <- DALEX::explain(lasso_fit, label = "lasso", data = test, y = test_outcome)
+explainer_ridge <- DALEX::explain(lasso_fit, label = "ridge", data = test, y = test_outcome)
+explainer_step <- DALEX::explain(lasso_fit, label = "step", data = test, y = test_outcome)
 
 mp_gam <- model_performance(explainer_gam)
 mp_mars <- model_performance(explainer_mars)
 mp_pcr <- model_performance(explainer_pcr)
+mp_lasso <- model_performance(explainer_lasso)
 
-plot(mp_gam, mp_mars, mp_pcr)
+plot(mp_gam, mp_mars, mp_pcr, mp_lasso)
 
 vi_gam <- variable_importance(explainer_gam, loss_function = loss_root_mean_square)
 vi_mars <- variable_importance(explainer_mars, loss_function = loss_root_mean_square)
 vi_pcr <- variable_importance(explainer_pcr, loss_function = loss_root_mean_square)
+vi_lasso <- variable_importance(explainer_lasso, loss_function = loss_root_mean_square)
+vi_ridge <- variable_importance(explainer_ridge, loss_function = loss_root_mean_square)
+vi_step <- variable_importance(explainer_step, loss_function = loss_root_mean_square)
 
 plot(vi_gam, vi_mars, vi_pcr)
+plot(vi_lasso, vi_ridge, vi_step)
 ```
 
 ```{r, echo = FALSE}
