@@ -41,11 +41,11 @@ Heart disease remains one of the leading causes of death in adults in the US. Un
 
 ### Exploratory Data Analysis
 
-The average county-level heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. Though approximately normally distributed, the exact density of the outcome distribution differs slightly among levels of categorical variables (Figures 1 & 2).  
+The average county-level heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. Though approximately normally distributed, the exact density of the outcome distribution differs slightly among levels of categorical variables.  
 
-In the category of health, statistics related to lifestyle characteristics (obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity) are highly intercorrelated (Figure 2a). Less so are more environmental - or "acts of God" - factors: air particulate matter, homicides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated). For demography, we found categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables. Given some of the subtleties in these distinctions, we condensed only race into "white" and "non-white". For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate (Figure 2a).
+In the category of health, statistics related to lifestyle characteristics (obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity) are highly intercorrelated (Figure 1). Less so are more environmental - or "acts of God" - factors: air particulate matter, homicides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated). For demography, we found categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables. Given some of the subtleties in these distinctions, we condensed only race into "white" and "non-white". For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate (Figure 1).
 
-Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity (Table 2). Predictors strongly associated with heart disease mortality are % physical inactivity, % diabetes, % adult obesity, education-related variables, % low birthweight, and overall death rate per 1,000 (Table 3). Many of the variables most strongly-associated with the outcome are associated with one another.
+Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity. Predictors strongly associated with heart disease mortality are % physical inactivity, % diabetes, % adult obesity, education-related variables, % low birthweight, and overall death rate per 1,000. Many of the variables most strongly-associated with the outcome are associated with one another.
 
 ## Methods
 
@@ -116,52 +116,39 @@ data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
 
 ```
 
-Above, table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Figure 3 presents the resampled training RMSE. GAM outperforms all other models in both fields, though MARS has similar performance on predicting outcomes in the test data. All linear models have similar performance.
+Above, table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Figure 2 presents the resampled training RMSE. GAM outperforms all other models in both fields, though MARS has similar performance on predicting outcomes in the test data. All linear models have similar performance.
 
 _Coefficient Shrinkage: Lasso and Ridge_
 
-For better visualization of coefficient shrinkage among the possible , a `glmnet` model was fit and the lambda value selected by `caret` as minimizing RMSE through cross-validated iterations was plotted (Figures 4 & 5).
+For better visualization of coefficient shrinkage among the possible , a `glmnet` model was fit and the lambda value selected by `caret` as minimizing RMSE through cross-validated iterations was plotted for ridge (Figure 3).
 
 _Investigation of MARS_
 
-The minimum generalized cross-validation error was achieved for a total of 25 features, including a two-way interaction term. Variable importance (Figure 7) is assessed by tracking GCV for each predictor and accumulating the reduction in GCV when each predictor’s feature is added to the model -- the total reduction is used as the measure of variable importance. If a predictor was never used in any MARS basis function, it has an importance value of zero; 18 predictors were used in a MARS basis function.
-
-MARS retained interactions between many sets of health-related variables, which one might expect given collinearity (and relatedness) between the within-category variable sets, as shown in Figure 8: Interaction terms were also present across categories.
+The minimum generalized cross-validation error was achieved for a total of 25 features, including a two-way interaction term. Variable importance is assessed by tracking GCV for each predictor and accumulating the reduction in GCV when each predictor’s feature is added to the model -- the total reduction is used as the measure of variable importance. If a predictor was never used in any MARS basis function, it has an importance value of zero; 18 predictors were used in a MARS basis function. MARS retained interactions between many sets of health-related variables, which one might expect given collinearity (and relatedness) between the within-category variable sets. Interaction terms were also present across categories.
 
 _Investigation of GAM_
 
 GAM fit 23 regression splines with a total degree of freedom of 78.05. Two splines had degrees of freedom close to 0, and therefore the predictors are effectively not included in the model: percent unemployment (econ__pct_unemployment) and percent adults with highest education of some college (demo__pct_adults_with_some_college). Additionally, four variables in total had p values > 0.05: percent unemployment, percent adults with highest education of some college, percent adults with bachelors degree or higher (demo__pct_adults_bachelors_or_higher), and total population per dentist (health__pop_per_dentist). 
 
-Two of the regression spline fits for GAM are shown in Figures 12 & 13. For percent nonwhite residents, heart disease mortality increases from a standard deviation lower percent nonwhite residents to an average percent nonwhite residents, but from an average level of percent nonwhite residents to three standard deviations higher, heart disease mortality decreases. For percent residents below 18 years of age, change heart disease mortality varies from 4 standard deviations below average percent residents below 18 years of age to 3 standard deviations above, then sharply increases from 3 standard deviations above to 6 standard deviations above average percent residents below 18 years of age.
+An example regression spline fit for GAM is shown in Figure 5. For percent residents below 18 years of age, change heart disease mortality varies from 4 standard deviations below average percent residents below 18 years of age to 3 standard deviations above, then sharply increases from 3 standard deviations above to 6 standard deviations above average percent residents below 18 years of age. Another example is for percent nonwhite residents, where heart disease mortality increases from a standard deviation lower percent nonwhite residents to an average percent nonwhite residents, but from an average level of percent nonwhite residents to three standard deviations higher, heart disease mortality decreases. 
 
 Compared to MARS and PCR, GAM gave more weight to the factor variable metropolitan status and metropolitan adjacency.
 
-
 ## Discussion
 
-GAM was our best-performing model. With GAM, we were able to achieve a cross-validated RMSE of median `r paste(round(gam_RMSE[3], 2))` and bootstrapped interquartile range of (`r paste(round(gam_RMSE[2], 2))`, `r paste(round(gam_RMSE[5], 2))`. GAM, and MARS, also performed well on the test data. 
+GAM was our best-performing model. With GAM, we were able to achieve a cross-validated RMSE of median `r paste(round(gam_RMSE[3], 2))` and bootstrapped interquartile range of (`r paste(round(gam_RMSE[2], 2))`, `r paste(round(gam_RMSE[5], 2))`. GAM, and MARS, also performed well on the test data. All models had similar distributions of residuals.
 
-All models had similar distributions of residuals, shown in Figure 9.
+This modeling problem was perhaps not best addressed by fitting lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot (Figure 3), where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve RMSE for this problem. Had these methods been more appropriate in this context, parameter selection might have been more obvious. As it is, the standard error of the mean cross-validated error was quite wide.
 
-This modeling problem was perhaps not best addressed by fitting lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot (Figure 4), where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve RMSE for this problem. Had these methods been more appropriate in this context, parameter selection might have been more obvious. As it is, as shown in Figure 6, the standard error of the mean cross-validated error is quite wide.
+As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. An even more flexible model might better capture the underlying truth, because the RMSE was still quite large. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred. For the linear model fit with stepwise selection, for every standard deviation increase of death rate per 1000 residents, heart disease mortality per 100k increases on average by 19.3 (95% CI 16.9 -- 21.6). Surprisingly, percent residents aged 65 years and older has a decreasing effect on heart disease mortality: for every standard deviation increase in percent residents aged 65 years and older, heart disease mortality per 100k decreases by 19.8 on average (95% CI -23.0 -- -16.6). Percent low birthweight increases heart disease mortality on average (1 s.d. change increases by 7.4, 95% CI 5.3 -- 9.4), and percent physical inactivity increases heart disease mortality on average (1 s.d. change increases by 9.0, 95% CI 6.5 -- 11.6).
 
-As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred. For the linear model fit with stepwise selection, for every standard deviation increase of death rate per 1000 residents, heart disease mortality per 100k increases on average by 19.3 (95% CI 16.9 -- 21.6). Surprisingly, percent residents aged 65 years and older has a decreasing effect on heart disease mortality: for every standard deviation increase in percent residents aged 65 years and older, heart disease mortality per 100k decreases by 19.8 on average (95% CI -23.0 -- -16.6). Percent low birthweight increases heart disease mortality on average (1 s.d. change increases by 7.4, 95% CI 5.3 -- 9.4), and percent physical inactivity increases heart disease mortality on average (1 s.d. change increases by 9.0, 95% CI 6.5 -- 11.6).
-
-
-Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Figures 10 & 11, generated by the package `DALEX`: for instance, overall death rate in a county consistently had a large, positive effect on the rate of heart disease mortality. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables metropolitan status (metro) and adjacency (metro_adjacency). Stepwise regression retained urban influence, and not other geography-related variables, and as we noted in exploratory data analysis, urban influence serves somewhat as a proxy for an interaction term between population and metropolitan status. Although the importance of particular predictors in a model with finite CV error-based parameter selection is subject to some randomness (or non-uniqueness), and therefore the meaning of importance should not be over-interpreted, it is possible that including several proxies for the same predictor type over-complicated predictor selection, particularly in the lasso, ridge, and PCR cases. A different approach to try would be to begin with fewer factor predictors and note whether lasso, ridge, and PCR would have more effective shrinkage.
+Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Figure 4, generated by the package `DALEX`: for instance, overall death rate in a county consistently had a large, positive effect on the rate of heart disease mortality. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables metropolitan status (metro) and adjacency (metro_adjacency). Stepwise regression retained urban influence, and not other geography-related variables, and as we noted in exploratory data analysis, urban influence serves somewhat as a proxy for an interaction term between population and metropolitan status. Although the importance of particular predictors in a model with finite CV error-based parameter selection is subject to some randomness (or non-uniqueness), and therefore the meaning of importance should not be over-interpreted, it is possible that including several proxies for the same predictor type over-complicated predictor selection, particularly in the lasso, ridge, and PCR cases. A different approach to try would be to begin with fewer factor predictors and note whether lasso, ridge, and PCR would have more effective shrinkage.
 
 \pagebreak 
 
 ## Tables and Figures
 
-```{r, echo = FALSE, fig.cap= "Heart disease mortality differs between metropolitan status"}
-heart %>% 
-  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro)) +
-  geom_boxplot(varwidth = TRUE, notch = TRUE) +
-  theme_minimal()
-```
-
-```{r, echo = FALSE, fig.width = 10, fig.cap= "Heart disease mortality is approximately normally distributed among levels of urban influence"}
+```{r, eval = FALSE, include = FALSE, echo = FALSE, fig.width = 10, fig.cap= "Heart disease mortality is approximately normally distributed among levels of urban influence"}
 #Factor Variables
 heart %>% 
   ggplot(aes(x = heart_disease_mortality_per_100k, y = urban_influence, fill = urban_influence, height = ..density..)) +
@@ -226,77 +213,6 @@ heart %>%
   drop_na() %>% 
   cor() %>% 
   corrplot::corrplot(method = "ellipse")
-
-cor_matrix <- heart %>% 
-  select_if(is.numeric) %>% 
-  drop_na() %>% 
-  cor()
-
-cor_tibble = as_tibble(cor_matrix)
-
-## Between category correlation
-econ <- tibble(variable = names(cor_tibble),
-                  econ__pct_civilian_labor = cor_tibble$econ__pct_civilian_labor,
-       econ__pct_unemployment = cor_tibble$econ__pct_unemployment,
-       econ__pct_uninsured_adults = cor_tibble$econ__pct_uninsured_adults,
-       econ__pct_uninsured_children = cor_tibble$econ__pct_uninsured_children) %>% 
-  filter(variable != "heart_disease_mortality_per_100k",
-         !str_detect(variable, "econ")) %>% 
-  arrange(variable) %>% 
-  mutate(flag = case_when(abs(econ__pct_civilian_labor) > 0.6 ~ "flag",
-                        abs(econ__pct_unemployment) > 0.6 ~ "flag",
-                        abs(econ__pct_uninsured_adults) > 0.6 ~ "flag",
-                        abs(econ__pct_uninsured_children) > 0.6 ~ "flag")) %>% 
-  filter(flag == "flag") %>% 
-  select(-flag)
-
-health <- tibble(variable = names(cor_tibble),
-                  health__air_pollution_particulate_matter = cor_tibble$health__air_pollution_particulate_matter,
-       health__motor_vehicle_crash_deaths_per_100k = cor_tibble$health__motor_vehicle_crash_deaths_per_100k,
-       health__pct_adult_obesity = cor_tibble$health__pct_adult_obesity,
-       health__pct_adult_smoking = cor_tibble$health__pct_adult_smoking,
-      health__pct_diabetes = cor_tibble$health__pct_diabetes,
-       health__pct_low_birthweight = cor_tibble$health__pct_low_birthweight,
-       health__pct_physical_inacticity = cor_tibble$health__pct_physical_inacticity,
-       health__pop_per_dentist = cor_tibble$health__pop_per_dentist,
-      health__pop_per_primary_care_physician = cor_tibble$health__pop_per_primary_care_physician) %>% 
-  filter(variable != "heart_disease_mortality_per_100k",
-         !str_detect(variable, "health")) %>% 
-  arrange(variable) %>% 
-  mutate(flag = case_when(abs(health__air_pollution_particulate_matter) > 0.6 ~ "flag",
-                        abs(health__motor_vehicle_crash_deaths_per_100k) > 0.6 ~ "flag",
-                        abs(health__pct_adult_obesity) > 0.6 ~ "flag",
-                        abs(health__pct_adult_smoking) > 0.6 ~ "flag",
-                      abs(health__pct_diabetes) > 0.6 ~ "flag",
-                      abs(health__pct_low_birthweight) > 0.6 ~ "flag",
-                      abs(health__pct_physical_inacticity) > 0.6 ~ "flag",
-                      abs(health__pop_per_dentist) > 0.6 ~ "flag",
-                      abs(health__pop_per_primary_care_physician) > 0.6 ~ "flag")) %>% 
-  filter(flag == "flag")
-
-econ <- econ %>% 
-  gather(key = with, value = correlation, starts_with("econ")) %>% 
-  filter(abs(correlation) > 0.6)
-
-health <- health %>% 
-  select(-flag) %>% 
-  gather(key = with, value = correlation, starts_with("health")) %>% 
-  group_by(variable) %>% 
-  filter(abs(correlation) > 0.6)
-
-multicollinearity <- full_join(econ, health)
-
-multicollinearity %>% 
-  knitr::kable(format = "latex", caption = "Highly Correlated Predictors Between Categories", digits = 2)
-
-##Correlation with outcome
-heart_attacks_cor = tibble(variable = names(cor_tibble),
-                     correlation = cor_tibble$heart_disease_mortality_per_100k)
-
-heart_attacks_cor %>% 
-    arrange(desc(abs(correlation))) %>% 
-    knitr::kable(format = "latex", caption = "Correlation with Outcome", digits = 2)
-
 ```
 
 ```{r, echo = FALSE, fig.cap = "GAM performance exceeded other model performance"}
@@ -331,7 +247,7 @@ plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
 abline(v = log(best_lambda_ridge), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Ridge")
 ```
 
-```{r, echo = FALSE, fig.cap = "Shrinkage performance of lasso and ridge was poor: CV selected small shrinkage (small lambda)"}
+```{r, include = FALSE, eval = FALSE, echo = FALSE, fig.cap = "Shrinkage performance of lasso and ridge was poor: CV selected small shrinkage (small lambda)"}
 plotmo::plot_glmnet(lasso_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
 abline(v = log(best_lambda_lasso), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Lasso")
 #could suggest selection of a more parsimonious model: lambda = exp(0)
@@ -350,7 +266,7 @@ predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>%
   knitr::kable(format = "latex", caption = "Top Absolute-Valued Coefficients, Lasso")
 ```
 
-```{r, echo = FALSE, fig.cap = "Highly overlapping CIs for parameter selection of Lasso and Ridge"}
+```{r, include = FALSE, eval = FALSE, echo = FALSE, fig.cap = "Highly overlapping CIs for parameter selection of Lasso and Ridge"}
 ## MSE 
 ### Ridge
 ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
@@ -389,11 +305,11 @@ library(patchwork)
 ridge_mse_plot + lasso_mse_plot
 ```
 
-```{r, echo = FALSE, fig.width = 10, fig.cap = "Variable Importance of MARS fit"}
+```{r, eval = FALSE, include = FALSE, echo = FALSE, fig.width = 10, fig.cap = "Variable Importance of MARS fit"}
 vip::vip(mars_fit, num_features = 18, bar = FALSE, value = "gcv") + ggtitle("GCV")
 ```
 
-```{r, echo = FALSE, fig.width = 10, fig.cap = "Partial Dependence Plots, MARS"}
+```{r, eval = FALSE, include = FALSE, echo = FALSE, fig.width = 10, fig.cap = "Partial Dependence Plots, MARS"}
 ##Functions
 str_remove_hlth <- function(x) {
   str_remove(x, pattern = "health__")
@@ -421,7 +337,7 @@ gridExtra::grid.arrange(p1, p2, p3, p5, p6, p7, ncol = 3)
 
 ```
 
-```{r residuals, echo=FALSE, fig.cap = "Similar CDF of residuals by model"}
+```{r residuals, eval = FALSE, include = FALSE, echo=FALSE, fig.cap = "Similar CDF of residuals by model"}
 explainer_gam <- DALEX::explain(gam_fit, label = "gam", data = test, y = test_outcome)
 explainer_mars <- DALEX::explain(mars_fit, label = "mars", data = test, y = test_outcome)
 explainer_pcr <- DALEX::explain(pcr_fit, label = "pcr", data = test, y = test_outcome)
@@ -439,7 +355,7 @@ mp_step <- model_performance(explainer_step)
 plot(mp_gam, mp_mars, mp_pcr, mp_lasso)
 ```
 
-```{r variable importance, echo=FALSE, fig.cap = "GAM performance relies heavily on the weight of metropolitan status"}
+```{r variable importance, echo=FALSE, fig.cap = "GAM performance relies heavily on the weight of metropolitan status", fig.height=12}
 explainer_gam <- DALEX::explain(gam_fit, label = "gam", data = test, y = test_outcome)
 explainer_mars <- DALEX::explain(mars_fit, label = "mars", data = test, y = test_outcome)
 explainer_pcr <- DALEX::explain(pcr_fit, label = "pcr", data = test, y = test_outcome)
@@ -454,14 +370,10 @@ vi_lasso <- variable_importance(explainer_lasso, loss_function = loss_root_mean_
 vi_ridge <- variable_importance(explainer_ridge, loss_function = loss_root_mean_square)
 vi_step <- variable_importance(explainer_step, loss_function = loss_root_mean_square)
 
-plot(vi_gam, vi_mars, vi_pcr)
-```
-
-```{r variable importance 2, echo=FALSE, fig.cap = "Linear models had similar variable importance"}
-plot(vi_lasso, vi_ridge, vi_step)
+plot(vi_gam, vi_mars, vi_pcr, vi_lasso, vi_ridge, vi_step)
 ```
 
 ```{r, echo = FALSE, fig.cap = "GAM smoothing splines fit", out.width = "80%"}
 knitr::include_graphics("gam_s(18yrs_younger).png")
-knitr::include_graphics("GAM_demopctnonwhite.png")
+#knitr::include_graphics("GAM_demopctnonwhite.png")
 ```
