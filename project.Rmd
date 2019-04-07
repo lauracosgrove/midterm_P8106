@@ -37,24 +37,23 @@ pcr_fit <- readRDS("pcr_imputed.rds")
 
 ## Introduction
 
-Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease mortality. Identifying county-level environmental and demographic predictor for heart disease mortality could aid in effective targeting of national campaigns to increase education and reduce risk. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
-
-
-## Methods
-
-In our data pre-processing and exploratory analysis, we examined variable distributions (checking for skewness, missing data, etc). We eliminated two variables with over 90% missing data, and used K-nearest neighbors (KNN) to impute reminaing missing values. The dataset was split into training and testing subsets at a parsing 2:1 ratio. There was one categorical variable for which individual factor levels had near-zero variance, but because these levels were part of a larger parameter, we did not remove them. The final dataset includes the outcome (heart disease mortality rate per 100k) and 28 predictors relating to economic, demographic, and health-related county charateristics. 
-
-We built predictive models on the training data using 6 methods: stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS. All model builds were performed using the `caret` package, and optimal model parameters were selected based on minimizing MSE (or, in the case of MARS, generalized cross-validation error) with 10-fold cross-validation, repeated five times. The optimal model was selected based on training RMSE, and models were again compared based on test RMSE. All R code used for model fitting is provided in the Appendix.
-
-## Results
+Heart disease remains one of the leading causes of death in adults in the US. Understanding risk factors for diseases of this kind is an important task in working towards reducing the number of lives lost. There is obvious benefit in doing this at an individual level, examining personal lifestyle, genetic profile, and family history. But there may be important environmental components that have predictive value in assessing risk for heart disease mortality. Identifying county-level environmental and demographic predictors for heart disease mortality could aid in effective targeting of national campaigns to increase education and reduce risk. We examine economic, health, and demographic data for thousands of counties across the US. This data is synthesized from several sources, including the USDA Economic Research Service, Bureau of Labor Statistics, US Census, Behavioral Risk Factor Surveillance System, the CDC, and others. Our goal in this project is to most effectively predict the county-level heart disease mortality rate per 100,000 persons. We build 6 predictive models (stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS), and compare them on their predictive capacity quantified by the root mean squared error (RMSE).
 
 ### Exploratory Data Analysis
 
-The average county-level heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. Though approximately normally distributed, the exact density of the outcome distribution differs slightly among levels of categorical variables [FIGURE].  
+The average county-level heart disease mortality per 100,000 residents is `r round(mean(heart$heart_disease_mortality_per_100k), 2)`, with standard deviation `r round(sd(heart$heart_disease_mortality_per_100k), 2)`. Though approximately normally distributed, the exact density of the outcome distribution differs slightly among levels of categorical variables (Figures 1 & 2).  
 
-In the category of health, statistics related to lifestyle characteristics (obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity) are highly intercorrelated. Less so are more environmental - or "acts of God" - factors: air particulate matter, homocides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated). For demography, we found categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables. Given some of the subtleties in these distinctions, we condensed only race into "white" and "non-white". For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate.
+In the category of health, statistics related to lifestyle characteristics (obesity, smoking, diabetes, low birthweight babies, excessive drinking, and physical inactivity) are highly intercorrelated (Figure 2a). Less so are more environmental - or "acts of God" - factors: air particulate matter, homicides, motor vehicle crashes, and rates of dentists and doctors (though the last two are highly correlated). For demography, we found categorical variables masquerading as separate predictors, leading to high intercorrelation within those categories: percentages of residents who are a given race accounts for 5 variables; age-related bins (less than 18, greater than 65) account for 2 variables; birth and death rate; and percentages of residents who complete a given level of education account for 4 variables. Given some of the subtleties in these distinctions, we condensed only race into "white" and "non-white". For economics, unsurprisingly, the percent of adults and the percent of children without health insurance  are highly correlated, as well as percent civilian labor and unemployment rate (Figure 2a).
 
-Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity. Predictors strongly associated with heart disease mortality are % physical inactivity, % diabetes, % adult obesity, education-related variables, % low birthweight, and overall death rate per 1,000. Many of the variables most strongly-associated with the outcome are associated with one another.
+Between categories, education-related variables are highly correlated with % civilian labor, % uninsured adults, and % physical inactivity (Table 2). Predictors strongly associated with heart disease mortality are % physical inactivity, % diabetes, % adult obesity, education-related variables, % low birthweight, and overall death rate per 1,000 (Table 3). Many of the variables most strongly-associated with the outcome are associated with one another.
+
+## Methods
+
+In our data pre-processing and exploratory analysis, we examined variable distributions (checking for skewness, missing data, etc). We eliminated two variables with over 90% missing data, and used K-nearest neighbors (KNN) to impute remaining missing values. The dataset was split into training and testing subsets at a parsing 2:1 ratio. There was one categorical variable for which individual factor levels had near-zero variance, but because these levels were part of a larger parameter, we did not remove them. The final dataset includes the outcome (heart disease mortality rate per 100k) and 28 predictors relating to economic, demographic, and health-related county characteristics. 
+
+We built predictive models on the training data using 6 methods: stepwise linear regression, Lasso, Ridge, PCR, GAM, and MARS. All model builds were performed using the `caret` package, and optimal model parameters were selected based on minimizing MSE (or, in the case of MARS, and GAM, generalized cross-validation error) with 10-fold cross-validation, repeated five times. The optimal model was selected based on training RMSE, and models were again compared based on test RMSE. All R code used for model fitting is provided in the Appendix.
+
+## Results
 
 ### Predictive Models
 
@@ -80,25 +79,8 @@ _Final models and RMSE_
 
 All models used the majority of all 28 variables (where categorical variables were split into dummy variables).
 
-Table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. GAM outperforms all other models in both fields, though MARS has similar performce on predicting outcomes in the test data. All linear models have similar performance.
-
-_Coefficient Shrinkage: Lasso and Ridge_
-
-For better visualization of coefficient shrinkage among the possible , a `glmnet` model was fit and the lambda value selected by `caret` as minimizing RMSE through cross-validated iterations was plotted. 
-
-_Investigation of MARS_
-
-The minimum generalized cross-validation error was achieved for a total of 25 features, including a two-way interaction term. Variable importance is assessed by tracking GCV for each predictor and accumulating the reduction in GCV when each predictor’s feature is added to the model -- the total reduction is used as the measure of variable importance. If a predictor was never used in any MARS basis function, it has an importance value of zero; 18 predictors were used in a MARS basis function.
-
-MARS retained interactions between many sets of health-related variables, which one might expect given collinearity (and relatedness) between the within-category variable sets, as shown in [FIGURE]: Interaction terms were also present across categories.
-
-_Investigation of GAM_
-
-Compared to MARS and PCR, GAM gave more weight to the factor variable metropolitan status and metropolitan adjacency.
-
-## Discussion
-
 ```{r include = FALSE}
+
 set.seed(2)
 # resample each model to compare 
 res <- resamples(list(
@@ -114,34 +96,84 @@ cv_RMSE <- summary(res)$statistics$RMSE
 gam_RMSE <- summary(res)$statistics$RMSE[5,]
 ```
 
+```{r, echo = FALSE}
+pred_lm = predict(lm_fit, newdata = test)
+pred_ridge = predict(ridge_fit, test)
+pred_lasso = predict(lasso_fit, test)
+pred_pcr = predict(pcr_fit, test)
+pred_gam = predict(gam_fit, test)
+pred_mars = predict(mars_fit, test)
+
+data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
+           test_rmse = c(sqrt(mean((pred_lm - test_outcome)^2)),
+                         sqrt(mean((pred_ridge - test_outcome)^2)),
+                         sqrt(mean((pred_lasso - test_outcome)^2)),
+                         sqrt(mean((pred_pcr - test_outcome)^2)),
+                         sqrt(mean((pred_gam - test_outcome)^2)),
+                         sqrt(mean((pred_mars - test_outcome)^2)))) %>%
+  `colnames<-`(c("Train RMSE", "Test RMSE")) %>%
+  knitr::kable(caption = "Predictive RMSE on training and test data")
+
+```
+
+Above, table 1 presents the RMSE of the predicted heart disease mortality rate for all models on both the training and testing datasets. Figure 3 presents the resampled training RMSE. GAM outperforms all other models in both fields, though MARS has similar performance on predicting outcomes in the test data. All linear models have similar performance.
+
+_Coefficient Shrinkage: Lasso and Ridge_
+
+For better visualization of coefficient shrinkage among the possible , a `glmnet` model was fit and the lambda value selected by `caret` as minimizing RMSE through cross-validated iterations was plotted (Figures 4 & 5).
+
+_Investigation of MARS_
+
+The minimum generalized cross-validation error was achieved for a total of 25 features, including a two-way interaction term. Variable importance (Figure 7) is assessed by tracking GCV for each predictor and accumulating the reduction in GCV when each predictor’s feature is added to the model -- the total reduction is used as the measure of variable importance. If a predictor was never used in any MARS basis function, it has an importance value of zero; 18 predictors were used in a MARS basis function.
+
+MARS retained interactions between many sets of health-related variables, which one might expect given collinearity (and relatedness) between the within-category variable sets, as shown in Figure 8: Interaction terms were also present across categories.
+
+_Investigation of GAM_
+
+GAM fit 23 regression splines with a total degree of freedom of 78.05. Two splines had degrees of freedom close to 0, and therefore the predictors are effectively not included in the model: percent unemployment (econ__pct_unemployment) and percent adults with highest education of some college (demo__pct_adults_with_some_college). Additionally, four variables in total had p values > 0.05: percent unemployment, percent adults with highest education of some college, percent adults with bachelors degree or higher (demo__pct_adults_bachelors_or_higher), and total population per dentist (health__pop_per_dentist). 
+
+Two of the regression spline fits for GAM are shown in Figures 12 & 13. For percent nonwhite residents, heart disease mortality increases from a standard deviation lower percent nonwhite residents to an average percent nonwhite residents, but from an average level of percent nonwhite residents to three standard deviations higher, heart disease mortality decreases. For percent residents below 18 years of age, change heart disease mortality varies from 4 standard deviations below average percent residents below 18 years of age to 3 standard deviations above, then sharply increases from 3 standard deviations above to 6 standard deviations above average percent residents below 18 years of age.
+
+Compared to MARS and PCR, GAM gave more weight to the factor variable metropolitan status and metropolitan adjacency.
+
+
+## Discussion
 
 GAM was our best-performing model. With GAM, we were able to achieve a cross-validated RMSE of median `r paste(round(gam_RMSE[3], 2))` and bootstrapped interquartile range of (`r paste(round(gam_RMSE[2], 2))`, `r paste(round(gam_RMSE[5], 2))`. GAM, and MARS, also performed well on the test data. 
 
-All models had similar distributions of residuals, shown in [FIGURE].
+All models had similar distributions of residuals, shown in Figure 9.
 
-This modeling problem was perhaps not best addressed by fitting lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot [FIGURE], where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve RMSE for this problem. Had these methods been more appropriate in this context, parameter selection might have been more obvious. As it is, as shown [IN FIGURE BLANK], the standard error of the mean cross-validated error is quite wide.
+This modeling problem was perhaps not best addressed by fitting lasso and ridge. Neither of the methods shrunk many coefficients in such a way that completely removed them from the model and improved the RMSE. The best visualization of the effect of shrinkage can be seen in the ridge coefficient plot (Figure 4), where it can be seen that the vast majority of coefficients shrunk equally. Lasso's more stringent shrinking power did not improve RMSE for this problem. Had these methods been more appropriate in this context, parameter selection might have been more obvious. As it is, as shown in Figure 6, the standard error of the mean cross-validated error is quite wide.
 
-As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred.
+As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred. For the linear model fit with stepwise selection, for every standard deviation increase of death rate per 1000 residents, heart disease mortality per 100k increases on average by 19.3 (95% CI 16.9 -- 21.6). Surprisingly, percent residents aged 65 years and older has a decreasing effect on heart disease mortality: for every standard deviation increase in percent residents aged 65 years and older, heart disease mortality per 100k decreases by 19.8 on average (95% CI -23.0 -- -16.6). Percent low birthweight increases heart disease mortality on average (1 s.d. change increases by 7.4, 95% CI 5.3 -- 9.4), and percent physical inactivity increases heart disease mortality on average (1 s.d. change increases by 9.0, 95% CI 6.5 -- 11.6).
 
-Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Appendix [FIGURE BLANK], generated by the package `DALEX`: for instance, overall death rate in a county consistently had a large, positive effect on the rate of heart disease mortality. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables metropolitan status (metro) and adjacency (metro_adjacency). Stepwise regression retained urban influence, and not other geography-related variables, and as we noted in exploratory data analysis, urban influence serves somewhate as a proxy for an interaction term between population and metropolitan status. Although the importance of particular predictors in a model with finite CV error-based parameter selection is subject to some randomness (or non-uniqueness), and therefore the meaning of importance should not be overinterpreted, it is possible that including several proxies for the same predictor type overcomplicated predictor selection, particularly in the lasso, ridge, and PCR cases. A different approach to try would be to begin with fewer factor predictors and note whether lasso, ridge, and PCR would have more effective shrinkage.
+
+Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Figures 10 & 11, generated by the package `DALEX`: for instance, overall death rate in a county consistently had a large, positive effect on the rate of heart disease mortality. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables metropolitan status (metro) and adjacency (metro_adjacency). Stepwise regression retained urban influence, and not other geography-related variables, and as we noted in exploratory data analysis, urban influence serves somewhat as a proxy for an interaction term between population and metropolitan status. Although the importance of particular predictors in a model with finite CV error-based parameter selection is subject to some randomness (or non-uniqueness), and therefore the meaning of importance should not be over-interpreted, it is possible that including several proxies for the same predictor type over-complicated predictor selection, particularly in the lasso, ridge, and PCR cases. A different approach to try would be to begin with fewer factor predictors and note whether lasso, ridge, and PCR would have more effective shrinkage.
 
 \pagebreak 
 
 ## Tables and Figures
 
-```{r, echo = FALSE, fig.width = 10}
+```{r, echo = FALSE, fig.cap= "Heart disease mortality differs between metropolitan status"}
+heart %>% 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro)) +
+  geom_boxplot(varwidth = TRUE, notch = TRUE) +
+  theme_minimal()
+```
+
+```{r, echo = FALSE, fig.width = 10, fig.cap= "Heart disease mortality is approximately normally distributed among levels of urban influence"}
 #Factor Variables
 heart %>% 
-  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro, height = ..density..)) +
-  ggjoy::geom_joy(scale = 0.85)
-
-heart %>% 
-  ggplot(aes(x = heart_disease_mortality_per_100k, y = metro_adjacency, fill = urban_influence, height = ..density..)) +
-  ggjoy::geom_joy(scale = 0.85, alpha = 0.3) 
+  ggplot(aes(x = heart_disease_mortality_per_100k, y = urban_influence, fill = urban_influence, height = ..density..)) +
+  theme_minimal() +
+  ggjoy::geom_joy(scale = 0.85, alpha = 0.3) +
+    theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
 
 ```
 
-```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.width = 10}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.cap =  "Correlation within predictor categories", fig.width = 12}
 
 ##Functions
 substring = function(x) {str_sub(x, start = -25)}
@@ -173,7 +205,7 @@ heart %>%
   rename_all(substring) %>% 
   drop_na() %>% 
   cor() %>% 
-  corrplot::corrplot(method = "ellipse")
+  corrplot::corrplot(method = "ellipse", title = "Figure 2a: Correlation within predictor categories")
 
 heart %>% 
   select_if(is.numeric) %>% 
@@ -183,7 +215,7 @@ heart %>%
   rename_all(substring) %>% 
   drop_na() %>% 
   cor() %>% 
-  corrplot::corrplot(method = "ellipse")
+  corrplot::corrplot(method = "ellipse") 
 
 heart %>% 
   select_if(is.numeric) %>% 
@@ -267,34 +299,15 @@ heart_attacks_cor %>%
 
 ```
 
-
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.cap = "GAM performance exceeded other model performance"}
 
 # plot RMSE ad CI for each model to compare predictive ability
 ggplot(res, metric = "RMSE") +
   theme_minimal() +
   labs(title = "Resampled Training RMSE")
-
-pred_lm = predict(lm_fit, newdata = test)
-pred_ridge = predict(ridge_fit, test)
-pred_lasso = predict(lasso_fit, test)
-pred_pcr = predict(pcr_fit, test)
-pred_gam = predict(gam_fit, test)
-pred_mars = predict(mars_fit, test)
-
-data.frame(train_rmse = summary(res)$statistics$RMSE[,4],
-           test_rmse = c(sqrt(mean((pred_lm - test_outcome)^2)),
-                         sqrt(mean((pred_ridge - test_outcome)^2)),
-                         sqrt(mean((pred_lasso - test_outcome)^2)),
-                         sqrt(mean((pred_pcr - test_outcome)^2)),
-                         sqrt(mean((pred_gam - test_outcome)^2)),
-                         sqrt(mean((pred_mars - test_outcome)^2)))) %>%
-  `colnames<-`(c("Train RMSE", "Test RMSE")) %>%
-  knitr::kable(caption = "Predictive RMSE on training and test data")
 ```
 
-
-```{r, echo = FALSE, warning = FALSE}
+```{r, echo = FALSE, warning = FALSE, fig.cap = "Shrinkage performance of lasso and ridge was poor: CV selected small shrinkage (small lambda)"}
 
 ##Coefficient Shrinkage
 
@@ -309,9 +322,6 @@ ridge_cv_glmnet <- glmnet::cv.glmnet(x, y,
 ### Lasso 
 best_lambda_lasso = lasso_fit$bestTune$lambda 
 
-predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
-  dim() #no shrinkage
-
 lasso_cv_glmnet <- glmnet::cv.glmnet(x, y, 
                       alpha = 1, 
                       lambda = exp(seq(-2, 4, length = 200)), 
@@ -319,7 +329,9 @@ lasso_cv_glmnet <- glmnet::cv.glmnet(x, y,
 
 plotmo::plot_glmnet(ridge_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
 abline(v = log(best_lambda_ridge), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Ridge")
+```
 
+```{r, echo = FALSE, fig.cap = "Shrinkage performance of lasso and ridge was poor: CV selected small shrinkage (small lambda)"}
 plotmo::plot_glmnet(lasso_cv_glmnet$glmnet.fit, xvar = "lambda", label = 8) +
 abline(v = log(best_lambda_lasso), col = "blue") + title(sub = "CV-selected lambda in blue", xlab = "Lasso")
 #could suggest selection of a more parsimonious model: lambda = exp(0)
@@ -329,7 +341,7 @@ predict(ridge_fit$finalModel, s = best_lambda_ridge, type = "coefficients") %>%
   broom::tidy() %>% 
   arrange(desc(abs(value))) %>% 
   top_n(10) %>% 
-  knitr::kable(format = "latex", caption = "Top Absolute-Values Coefficients, Ridge")
+  knitr::kable(format = "latex", caption = "Top Absolute-Valued Coefficients, Ridge")
 
 predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>% 
   broom::tidy() %>% 
@@ -338,7 +350,7 @@ predict(lasso_fit$finalModel, s = best_lambda_lasso, type = "coefficients") %>%
   knitr::kable(format = "latex", caption = "Top Absolute-Valued Coefficients, Lasso")
 ```
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.cap = "Highly overlapping CIs for parameter selection of Lasso and Ridge"}
 ## MSE 
 ### Ridge
 ridge_cv_table <- tibble(lambda_values = ridge_cv_glmnet$lambda, mse = ridge_cv_glmnet$cvm, mse_upper = ridge_cv_glmnet$cvup, mse_lower = ridge_cv_glmnet$cvlo)
@@ -377,9 +389,11 @@ library(patchwork)
 ridge_mse_plot + lasso_mse_plot
 ```
 
-```{r, echo = FALSE, fig.width = 10}
+```{r, echo = FALSE, fig.width = 10, fig.cap = "Variable Importance of MARS fit"}
 vip::vip(mars_fit, num_features = 18, bar = FALSE, value = "gcv") + ggtitle("GCV")
+```
 
+```{r, echo = FALSE, fig.width = 10, fig.cap = "Partial Dependence Plots, MARS"}
 ##Functions
 str_remove_hlth <- function(x) {
   str_remove(x, pattern = "health__")
@@ -392,17 +406,6 @@ str_remove_econ <- function(x) {
 str_remove_demo <- function(x) {
   str_remove(x, pattern = "demo__")
 }
-
-coef(mars_fit$finalModel) %>%
-  broom::tidy() %>% 
-  mutate(names = str_remove_hlth(names)) %>% 
-  mutate(names = str_remove_hlth(names)) %>% 
-  mutate(names = str_remove_econ(names)) %>% 
-  mutate(names = str_remove_econ(names)) %>% 
-  mutate(names = str_remove_demo(names)) %>% 
-  mutate(names = str_remove_demo(names)) #%>% #repeated bc appears twice
- # knitr::kable(format = "latex")# %>% 
-  #kableExtra::kable_styling(latex_options = "scale_down") 
 
 p1 <- pdp::partial(mars_fit, pred.var = c("health__pct_physical_inacticity"), grid.resolution = 10) %>% autoplot()
 p2 <- pdp::partial(mars_fit, pred.var = c("demo__pct_aged_65_years_and_older"), grid.resolution = 10) %>% autoplot()
@@ -452,221 +455,13 @@ vi_ridge <- variable_importance(explainer_ridge, loss_function = loss_root_mean_
 vi_step <- variable_importance(explainer_step, loss_function = loss_root_mean_square)
 
 plot(vi_gam, vi_mars, vi_pcr)
+```
+
+```{r variable importance 2, echo=FALSE, fig.cap = "Linear models had similar variable importance"}
 plot(vi_lasso, vi_ridge, vi_step)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.cap = "GAM smoothing splines fit", out.width = "80%"}
 knitr::include_graphics("gam_s(18yrs_younger).png")
-knitr::include_graphics("GAM_s(bachelors_or_higher).png")
+knitr::include_graphics("GAM_demopctnonwhite.png")
 ```
-
-
-\pagebreak
-
-## Appendix
-
-### Data prep
-
-```{r, eval=F}
-## Data import
-predictors <- read_csv("./data/Training_values.csv") 
-response <- read_csv("./data/Training_labels.csv") 
-
-
-## Manipulation
-data <- response %>% 
-  full_join(predictors, by = "row_id") %>%
-  separate(col = area__rucc, into = c('metro', 'population'), sep = ' - ') %>%
-  rename(urban_influence = area__urban_influence,
-         economic_typology = econ__economic_typology) %>%
-  mutate(pure_population = fct_collapse(as.factor(population), 
-                                        "more_than_1mil" = "Counties in metro areas of 1 million population or more",
-                                        "250k_to_1mil" = "Counties in metro areas of 250,000 to 1 million population",
-                                        "less_than_250k" = "Counties in metro areas of fewer than 250,000 population",
-                                        "more_than_20k" = c("Urban population of 20,000 or more, adjacent to a metro area", 
-                                                               "Urban population of 20,000 or more, not adjacent to a metro area"),
-                                        "2500_to_20k" = c("Urban population of 2,500 to 19,999, adjacent to a metro area", 
-                                                             "Urban population of 2,500 to 19,999, not adjacent to a metro area"),
-                                        "less_than_2500" = c("Completely rural or less than 2,500 urban population, adjacent to a metro area", 
-                                                        "Completely rural or less than 2,500 urban population, not adjacent to a metro area")),
-         economic_typology = as.factor(recode(economic_typology,
-                                              "Nonspecialized" = "Nonspecialized",
-                                              "Manufacturing-dependent" = "Manufacturing",
-                                              "Farm-dependent" = "Farming",
-                                              "Federal/State government-dependent" = "Government",
-                                              "Mining-dependent" = "Mining",
-                                              "Recreation" = "Recreation")),
-        metro = factor(metro, 
-                       levels = c("Metro", "Nonmetro")),
-        urban_influence = str_replace_all(urban_influence, " |/|-", "_"), # replace problematic characters
-        urban_influence = str_replace_all(urban_influence, ",", ""), # replace problematic characters
-        demo__pct_nonwhite = demo__pct_hispanic + demo__pct_asian + demo__pct_american_indian_or_alaskan_native + demo__pct_non_hispanic_african_american,
-        urban_influence = fct_rev(urban_influence),
-        metro_adjacency = fct_collapse(population, 
-                                       metro = c("Counties in metro areas of 1 million population or more", 
-                                                 "Counties in metro areas of 250,000 to 1 million population", 
-                                                 "Counties in metro areas of fewer than 250,000 population"),
-                                       adjacent = c("Urban population of 20,000 or more, adjacent to a metro area", 
-                                                    "Urban population of 2,500 to 19,999, adjacent to a metro area", 
-                                                    "Completely rural or less than 2,500 urban population, adjacent to a metro area"),
-                                       nonadjacent = c("Urban population of 20,000 or more, not adjacent to a metro area", 
-                                                       "Urban population of 2,500 to 19,999, not adjacent to a metro area", 
-                                                       "Completely rural or less than 2,500 urban population, not adjacent to a metro area"))) %>% 
-  dplyr::select(-demo__pct_hispanic, 
-                -demo__pct_asian,
-                -demo__pct_american_indian_or_alaskan_native, 
-                -demo__pct_non_hispanic_african_american,
-                -demo__pct_non_hispanic_white,
-                -health__homicides_per_100k, # >90% missing
-                -health__pct_excessive_drinking, # >90% missing
-                -yr,
-                -population,
-                -row_id) 
-
-
-```
-
-
-Training and testing data split. Imputation on missing data.
-
-```{r, eval=F}
-## training/test data
-set.seed(1)
-train_ind <- sample(seq_len(nrow(data)), size = 2/3*nrow(data)) # select rows in 2:1 ratio 
-
-train <- data[train_ind, ] # training dataset
-test <- data[-train_ind, ] # testing dataset
-
-# Imputation for missing values with caret, based on training data
-training_preproc = caret::preProcess(train[,-1], 
-                                     method = "knnImpute", # automatically centers and scales data
-                                     pcaComp = 10,
-                                     na.remove = TRUE,
-                                     k = 5,
-                                     knnSummary = mean,
-                                     outcome = NULL,
-                                     fudge = .2,
-                                     numUnique = 3,
-                                     verbose = TRUE)
-
-# Impute training imputation on both training and testing datasets
-train_imputed = predict(training_preproc, train)
-test_imputed = predict(training_preproc, test)
-
-#save files to Rdata: was not saving the factor structure in read from csv
-saveRDS(train_imputed, file = './data/train_imputed.Rdata')
-saveRDS(train_imputed, file = './data/test_imputed.Rdata')
-
-```
-
-
-*Linear Models*
-
-Set up `caret` training control. We will use this for all models.
-
-```{r}
-set.seed(100)
-ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
-```
-
-
-Stepwise regression:
-```{r, eval=F}
-set.seed(2)
-step.fit = caret::train(x, y, 
-                        method = 'glmStepAIC',
-                        metric = "RMSE",
-                        trControl = ctrl)
-saveRDS(step.fit, "lm_step_imputed.rds")
-```
-
-
-Lasso:
-```{r, eval=F}
-set.seed(2)
-lasso_fit <- caret::train(x, y,
-                          method = "glmnet",
-                          metric = "RMSE",
-                          tuneGrid = expand.grid(alpha = 1,
-                                                lambda = exp(seq(-2, 4, length = 200))),
-                          trControl = ctrl)
-plot(lasso_fit, xTrans = function(x) log(x)) #in correct range
-
-saveRDS(lasso_fit, "lasso_imputed.rds")
-```
-
-
-Ridge:
-```{r, eval=F}
-set.seed(100)
-
-ridge_fit <- caret::train(x, y,
-                     method = "glmnet",
-                     tuneGrid = expand.grid(alpha = 0, 
-                                            lambda = exp(seq(-2, 10, length = 200))),
-                    trControl = ctrl1)
-
-
-plot(ridge_fit, xTrans = function(x) log(x)) #in correct range
-
-best_lambda_ridge = ridge_fit$bestTune$lambda 
-
-saveRDS(ridge_fit, "ridge.rds")
-```
-
-
-PCR:
-```{r, eval=F}
-set.seed(2)
-pcr_fit <- caret::train(x, y,
-                        method = "pcr",
-                        trControl = ctrl,
-                        metric = "RMSE",
-                        tuneLength = 200)
-saveRDS(pcr_fit, "pcr_imputed.rds")
-```
-
-
-
-*Non-linear models*
-
-
-GAM:
-```{r, eval=F}
-set.seed(2)
-gam_fit <- caret::train(x, y, 
-                        method = "gam",
-                        metric = 'RMSE',
-                        tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE, FALSE)),
-                        trControl = ctrl)
-summary(gam_fit)
-saveRDS(gam_fit, "gam_fit_imputed.rds")
-
-```
-
-
-MARS:
-```{r, eval=F}
-mars_grid <- expand.grid(degree = 1:3, # degree: 1 vs 2 vs 3, no interaction vs. interaction;
-                         nprune = 10:40) # nprune is number of coef
-
-set.seed(2)
-
-mars_fit <- caret::train(x, y,
-                         method = "earth",
-                         tuneGrid = mars_grid,
-                         trControl = ctrl)
-
-saveRDS(mars_fit, "mars.rds")
-
-#based on initial results, choose parsimonious version
-mars_grid_refined <- expand.grid(degree = 2, nprune = 25:40) 
-
-mars_fit_refined <- caret::train(x, y,
-                                 method = "earth",
-                                 tuneGrid = mars_grid_refined,
-                                 trControl = ctrl)
-saveRDS(mars_fit_refined, "mars2.rds")
-
-```
-
