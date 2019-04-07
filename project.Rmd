@@ -84,7 +84,7 @@ Table 1 presents the RMSE of the predicted heart disease mortality rate for all 
 
 _Coefficient Shrinkage: Lasso and Ridge_
 
-For better visualization, a `glmnet` model was fit and the lambda value selected by `caret` was plotted. 
+For better visualization of coefficient shrinkage among the possible , a `glmnet` model was fit and the lambda value selected by `caret` as minimizing RMSE through cross-validated iterations was plotted. 
 
 _Investigation of MARS_
 
@@ -123,8 +123,7 @@ This modeling problem was perhaps not best addressed by fitting lasso and ridge.
 
 As described, GAM and MARS outperformed the linear models, and if the primary goal of the model is prediction, than we suggest using GAM. However, the linear models were close in performance to these more flexible models, and if simplicity and interpretability are major concerns, one of these may be preferred.
 
-Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Appendix [FIGURE BLANK]. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables Metro and Metro Adjacency. 
-
+Variable importance was relatively consistent through each model, as measured by loss-perturbed RMSE in the `caret` cross-validation and shown in Appendix [FIGURE BLANK]: for instance, overall death rate in a county consistently had a large, positive effect on the rate of heart disease mortality. However, compared to other models, GAM gave much more weight to the value of the geography-related factor variables metropolitan status (metro) and adjacency (metro_adjacency). Stepwise regression retained urban influence, and not other geography-related variables, and as we noted in exploratory data analysis, urban influence serves somewhate as a proxy for an interaction term between population and metropolitan status. Although the importance of particular predictors in a model with finite CV error-based parameter selection is subject to some randomness (or non-uniqueness), and therefore the meaning of importance should not be overinterpreted, it is possible that including several proxies for the same predictor type overcomplicated predictor selection, particularly in the lasso, ridge, and PCR cases. A different approach to try would be to begin with fewer factor predictors and note whether lasso, ridge, and PCR would have more effective shrinkage.
 
 \pagebreak 
 
